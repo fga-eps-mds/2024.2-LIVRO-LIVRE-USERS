@@ -1,29 +1,35 @@
 import { Injectable } from '@nestjs/common';
-import { User } from 'libs/database/entities/user.entity';
-import { UserRepository } from 'libs/database/repositories/user.repository';
 import { CreateUserDto } from './dtos/createUser.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../database/entities/user.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(private userRepository: UserRepository) {}
+  constructor(
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+  ) {}
 
   async create(data: CreateUserDto): Promise<User> {
-    return this.userRepository.create({
+    const user = this.usersRepository.create(data);
+    await this.usersRepository.save({
       id: uuidv4(),
       ...data,
     });
+    return user;
   }
 
   findAll(): Promise<User[]> {
-    return this.userRepository.findAll();
+    return this.usersRepository.find();
   }
 
   findOne(id: string): Promise<User | null> {
-    return this.userRepository.findOneById(id);
+    return this.usersRepository.createQueryBuilder().where({ id }).getOne()
   }
 
   async remove(id: string): Promise<void> {
-    await this.userRepository.remove(id);
+    await this.usersRepository.delete(id);
   }
 }

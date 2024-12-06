@@ -1,9 +1,7 @@
-import { IUser } from 'libs/types/user.type';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Post } from './post.entity';
 
 @Entity()
-export class User implements IUser {
+export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -18,7 +16,4 @@ export class User implements IUser {
 
   @Column()
   email: string;
-
-  @OneToMany(() => Post, post => post.user)
-  posts: Post[];
 }
