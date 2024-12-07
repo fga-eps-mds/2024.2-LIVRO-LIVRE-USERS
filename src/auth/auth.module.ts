@@ -16,6 +16,6 @@ import { User } from '../database/entities/user.entity';
     })
   ],
   controllers: [AuthController],
-  providers: [AuthService]
+  providers: [AuthService],
 })
 export class AuthModule {}
