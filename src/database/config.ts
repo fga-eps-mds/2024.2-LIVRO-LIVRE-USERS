@@ -16,7 +16,7 @@ const config = {
     migrations: [join(__dirname, 'migrations', '*.{ts,js}')],
     autoLoadEntities: true,
     synchronize: false,
-    ssl: { rejectUnauthorized: false },
+    ssl: process.env.ENVIRONMENT === 'dev' ? null : { rejectUnauthorized: false },
 }
 
 export default registerAs('typeorm', () => config)

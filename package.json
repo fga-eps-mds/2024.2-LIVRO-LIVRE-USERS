@@ -22,7 +22,8 @@
     "migration:run": "npm run typeorm migration:run -- -d ./src/database/config.ts",
     "migration:generate": "npm run typeorm -- -d ./src/database/config.ts migration:generate ./src/database/migrations/$npm_config_name",
     "migration:create": "npm run typeorm -- migration:create ./src/database/migrations/$npm_config_name",
-    "migration:revert": "npm run typeorm -- -d ./src/database/config.ts migration:revert"
+    "migration:revert": "npm run typeorm -- -d ./src/database/config.ts migration:revert",
+    "heroku-postbuild": "NODE_ENV=dev npm install --omit --no-shrinkwrap && npm run build"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
