@@ -33,7 +33,7 @@ export class AuthService {
     };
   }
 
-  async signUp(dto: SignUpDto): Promise<User> {
+  async signUp(dto: SignUpDto): Promise<SignInResponseDto> {
     const userExists = await this.usersRepository.findOneBy({
       email: dto.email,
     });
@@ -43,6 +43,11 @@ export class AuthService {
       password: await bcrypt.hash(dto.password, await bcrypt.genSalt(10)),
     });
     await this.usersRepository.save(user);
+    return this.signIn({ email: dto.email, password: dto.password });
+  }
+
+  async getProfile(data: { sub: string; email: string }): Promise<User> {
+    const user = await this.usersRepository.findOneBy({ id: data.sub });
     return user;
   }
 }

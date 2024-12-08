@@ -12,5 +12,8 @@ export class SignUpDto {
   email: string;
 
   @IsNotEmpty()
+  phone: string;
+
+  @IsNotEmpty()
   password: string;
 }

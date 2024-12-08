@@ -31,6 +31,7 @@ export class UsersService {
     user.firstName = updateData.firstName;
     user.lastName = updateData.lastName;
     user.email = updateData.email;
+    user.phone = updateData.phone;
 
     if (updateData.newPassword && updateData.oldPassword) {
       if (!(await bcrypt.compare(updateData.oldPassword, user.password))) {

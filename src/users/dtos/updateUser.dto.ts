@@ -13,4 +13,7 @@ export class UpdateUserDto {
   @IsNotEmpty()
   @IsEmail()
   email: string;
+
+  @IsNotEmpty()
+  phone: string;
 }
