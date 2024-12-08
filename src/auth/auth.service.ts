@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../database/entities/user.entity';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs'; 
+import * as bcrypt from 'bcryptjs';
 import { SignInDto } from './dtos/signIn.dto';
 import { SignInResponseDto } from './dtos/signInResponse.dto';
 import { SignUpDto } from './dtos/signUp.dto';
@@ -24,11 +24,15 @@ export class AuthService {
 
     const payload = { sub: user.id, email: user.email };
     return {
-      accessToken: await this.jwtService.signAsync(payload, { expiresIn: '60m' }),
-      refreshToken: await this.jwtService.signAsync(payload, { expiresIn: '7d' }),
+      accessToken: await this.jwtService.signAsync(payload, {
+        expiresIn: '60m',
+      }),
+      refreshToken: await this.jwtService.signAsync(payload, {
+        expiresIn: '7d',
+      }),
     };
   }
-  
+
   async signUp(dto: SignUpDto): Promise<User> {
     const userExists = await this.usersRepository.findOneBy({
       email: dto.email,

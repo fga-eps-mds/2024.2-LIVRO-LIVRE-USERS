@@ -10,9 +10,7 @@ import { jwtContants } from './auth.constants';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(
-    private jwtService: JwtService,
-  ) {}
+  constructor(private jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -21,12 +19,9 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException();
     }
     try {
-      const payload = await this.jwtService.verifyAsync(
-        token,
-        {
-          secret: jwtContants.secret
-        }
-      );
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: jwtContants.secret,
+      });
       request['user'] = payload;
     } catch {
       throw new UnauthorizedException();

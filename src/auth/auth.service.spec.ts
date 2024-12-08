@@ -15,15 +15,15 @@ describe('AuthService', () => {
         JwtModule.register({
           global: true,
           secret: jwtContants.secret,
-          signOptions: { expiresIn: '60s' }
-        })
+          signOptions: { expiresIn: '60s' },
+        }),
       ],
       providers: [
         AuthService,
         {
           provide: getRepositoryToken(User),
           useFactory: repositoryMockFactory,
-        }
+        },
       ],
     }).compile();
 

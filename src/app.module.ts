@@ -13,7 +13,8 @@ import typeormConfig from './database/config';
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => (configService.get('typeorm')),
+      useFactory: async (configService: ConfigService) =>
+        configService.get('typeorm'),
     }),
     UsersModule,
     AuthModule,

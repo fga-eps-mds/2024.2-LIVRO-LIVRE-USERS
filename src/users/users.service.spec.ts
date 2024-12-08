@@ -14,7 +14,7 @@ describe('UsersService', () => {
         {
           provide: getRepositoryToken(User),
           useFactory: repositoryMockFactory,
-        }
+        },
       ],
     }).compile();
 
