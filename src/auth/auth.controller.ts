@@ -35,7 +35,7 @@ export class AuthController {
   @Post('change-password')
   @UseGuards(AuthGuard)
   changePassword(@Body() body: ChangePasswordDto, @Request() req) {
-    return this.authService.changePassword(req.sub, body.password);
+    return this.authService.changePassword(req.user.sub, body.password);
   }
 
   @UseGuards(AuthGuard)

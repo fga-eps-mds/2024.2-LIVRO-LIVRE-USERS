@@ -12,7 +12,6 @@ import { User } from '../database/entities/user.entity';
     JwtModule.register({
       global: true,
       secret: jwtContants.secret,
-      signOptions: { expiresIn: '60s' },
     }),
   ],
   controllers: [AuthController],
