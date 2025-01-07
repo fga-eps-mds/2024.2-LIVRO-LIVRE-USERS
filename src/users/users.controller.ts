@@ -11,11 +11,16 @@ import {
 } from '@nestjs/common';
 import { UpdateUserDto } from './dtos/updateUser.dto';
 import { AuthGuard } from '../auth/auth.guard';
+import { Roles } from 'src/auth/roles.decorator';
+import { UserRoles } from 'src/database/entities/user.entity';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @Controller('users')
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
+  @Roles(UserRoles.Admin)
+  @UseGuards(AuthGuard, RolesGuard)
   @Get()
   findAll() {
     return this.usersService.findAll();
