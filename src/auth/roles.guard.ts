@@ -1,4 +1,3 @@
-// src/auth/roles.guard.ts
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRoles } from 'src/database/entities/user.entity';
