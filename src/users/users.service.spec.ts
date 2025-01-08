@@ -40,4 +40,32 @@ describe('UsersService', () => {
       expect(userRepository.find).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('findOne', () => {
+    it('should return a user when found', async () => {
+      const user = new User();
+      jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
+
+      const result = await service.findOne('123');
+      expect(result).toEqual(user);
+      expect(userRepository.findOneBy).toHaveBeenCalledWith({ id: '123' });
+    });
+
+    it('should return null if no user is found', async () => {
+      jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(null);
+
+      const result = await service.findOne('123');
+      expect(result).toBeNull();
+      expect(userRepository.findOneBy).toHaveBeenCalledWith({ id: '123' });
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete the user', async () => {
+      jest.spyOn(userRepository, 'delete').mockResolvedValueOnce({} as any);
+
+      await service.remove('123');
+      expect(userRepository.delete).toHaveBeenCalledWith('123');
+    });
+  });
 });
