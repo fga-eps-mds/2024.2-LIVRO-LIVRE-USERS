@@ -1,8 +1,21 @@
 version: '3'
 
 services:
+  #app:
+    #build:
+    #  context: .
+    #container_name: livro-livre-app
+    #ports:
+    #  - '3000:3000'
+    #env_file:
+    #  - .env
+    #depends_on:
+    #  - postgres
+
+
   postgres:
     image: postgres
+    container_name: livro-livre-db
     ports:
       - 5432:5432
     environment:
