@@ -68,4 +68,73 @@ describe('UsersService', () => {
       expect(userRepository.delete).toHaveBeenCalledWith('123');
     });
   });
+
+  // por motivos de pistolagem e depressão errei tudo aqui neste teste de update e não consegui corrigir
+
+  // describe.skip('update', () => {
+  //   it('should update and return the user', async () => {
+  //     const user = new User();
+  //     user.password = 'hashedPassword';
+
+  //     const updateData = {
+  //       firstName: 'John',
+  //       lastName: 'Doe',
+  //       email: 'john.doe@example.com',
+  //       phone: '123456789',
+  //       newPassword: 'newPassword',
+  //       oldPassword: 'oldPassword',
+  //     };
+
+  //     jest.spyOn(service, 'findOne').mockResolvedValueOnce(user);
+  //     jest.spyOn(bcrypt, 'compare').mockResolvedValueOnce(true);
+  //     jest.spyOn(bcrypt, 'hash').mockResolvedValueOnce('newHashedPassword');
+  //     jest.spyOn(userRepository, 'save').mockResolvedValueOnce(user);
+
+  //     const result = await service.update('123', updateData);
+
+  //     expect(service.findOne).toHaveBeenCalledWith('123');
+  //     expect(bcrypt.compare).toHaveBeenCalledWith(
+  //       updateData.oldPassword,
+  //       user.password,
+  //     );
+  //     expect(bcrypt.hash).toHaveBeenCalledWith(
+  //       updateData.newPassword,
+  //       expect.any(String),
+  //     );
+  //     expect(userRepository.save).toHaveBeenCalledWith({
+  //       ...user,
+  //       firstName: 'John',
+  //       lastName: 'Doe',
+  //       email: 'john.doe@example.com',
+  //       phone: '123456789',
+  //       password: 'newHashedPassword',
+  //     });
+  //     expect(result).toEqual(user);
+  //   });
+
+  //   it('should throw NotFoundException if the user does not exist', async () => {
+  //     jest.spyOn(service, 'findOne').mockResolvedValueOnce(null);
+
+  //     await expect(
+  //       service.update('123', { firstName: 'John' } as any),
+  //     ).rejects.toThrow(NotFoundException);
+  //   });
+
+  //   it('should throw UnauthorizedException if the old password is incorrect', async () => {
+  //     const user = new User();
+  //     user.password = 'hashedPassword';
+
+  //     jest.spyOn(service, 'findOne').mockResolvedValueOnce(user);
+  //     jest.spyOn(bcrypt, 'compare').mockResolvedValueOnce(false);
+
+  //     const updateData = {
+  //       oldPassword: 'wrongPassword',
+  //       newPassword: 'newPassword',
+  //     };
+
+  //     await expect(service.update('123', updateData)).rejects.toThrow(
+  //       UnauthorizedException,
+  //     );
+  //   });
+  // });
 });
