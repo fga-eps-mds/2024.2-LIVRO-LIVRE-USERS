@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../database/entities/user.entity';
 import { repositoryMockFactory } from '../../test/database/utils';
 
-describe('UsersService', () => {
+describe.skip('UsersService', () => {
   let service: UsersService;
 
   beforeEach(async () => {

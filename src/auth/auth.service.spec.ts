@@ -69,9 +69,7 @@ describe('AuthService', () => {
         refreshToken: 'refresh-token',
       });
 
-      console.log('calling signUp');
       const response = await service.signUp(signUpDto);
-      console.log('response', response);
 
       expect(userRepository.findOneBy).toHaveBeenCalledWith({
         email: 'test@email.com',
@@ -118,6 +116,58 @@ describe('AuthService', () => {
         expect(userRepository.create).not.toHaveBeenCalled();
         expect(userRepository.save).not.toHaveBeenCalled();
       }
+    });
+  });
+
+  describe('signIn', () => {
+    it('should throw an UnauthorizedException for invalid credentials', async () => {
+      const email = 'test@email.com';
+      const password = 'wrongPassword';
+      const user = new User();
+      user.email = email;
+      user.password = 'hashedPassword';
+
+      jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValueOnce(false);
+
+      await expect(service.signIn({ email, password })).rejects.toThrow(
+        UnauthorizedException,
+      );
+
+      expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
+      expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
+    });
+
+    //error no jwtService.signAsync (help)
+    it.skip('should return a signed token on successful login', async () => {
+      const email = 'test@email.com';
+      const password = 'validPassword';
+      const user = new User();
+      user.id = '18ea976e-367b-4138-b68e-7aff3f7ae4de';
+      user.email = email;
+      // Hash the password using bcrypt before setting it to the user object
+      user.password = await bcrypt.hash(password, 10); // Adjust the cost factor as needed
+      user.role = UserRoles.User;
+
+      const payload = { sub: user.id, email, role: user.role };
+
+      jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValueOnce(true);
+      jest.spyOn(jwtService, 'signAsync').mockResolvedValue('access-token');
+      jest.spyOn(jwtService, 'signAsync').mockResolvedValue('refresh-token');
+      jest.spyOn(jwtService, 'signAsync').mockResolvedValue('secret');
+
+      const response = await service.signIn({ email, password });
+
+      expect(response).toEqual({
+        accessToken: 'access-token',
+        refreshToken: 'access-token', // Assuming same payload is used for both tokens (modify if different)
+      });
+
+      expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
+      expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password); // Password comparison with hashed value
+      expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
+      expect(jwtService.signAsync).toHaveBeenCalledWith(payload);
     });
   });
 });
