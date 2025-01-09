@@ -3,11 +3,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User, UserRoles } from '../database/entities/user.entity';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import { SignUpDto } from '../auth/dtos/signUp.dto';
 import * as bcrypt from 'bcryptjs';
 import { repositoryMockFactory } from '../../test/database/utils';
-import { jwtContants } from './auth.constants';
 import { UnauthorizedException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
@@ -47,11 +46,10 @@ describe('AuthService', () => {
     jest.spyOn(bcrypt, 'hash').mockResolvedValueOnce('hashed-password');
     jest.spyOn(bcrypt, 'genSalt').mockResolvedValueOnce(10);
 
-    // Mock do transporte do nodemailer para evitar conexões reais
     sendMailMock = jest.fn();
     jest.spyOn(nodemailer, 'createTransport').mockReturnValue({
       sendMail: sendMailMock,
-    } as any); // Adicionando o mock do transporte de e-mail
+    } as any);
   });
 
   describe('signUp', () => {
@@ -101,7 +99,6 @@ describe('AuthService', () => {
     });
 
     it('should throw an error if user already exists', async () => {
-      // Arrange
       const signUpDto: SignUpDto = {
         firstName: 'Test',
         lastName: 'User',
@@ -117,12 +114,10 @@ describe('AuthService', () => {
         .spyOn(userRepository, 'findOneBy')
         .mockResolvedValueOnce(existingUser);
 
-      // Act
       try {
         await service.signUp(signUpDto);
         fail('An error should be thrown');
       } catch (error) {
-        // Assert
         expect(error).toBeInstanceOf(UnauthorizedException);
         expect((error as Error).message).toBe('Usuário já cadastrado.');
         expect(userRepository.create).not.toHaveBeenCalled();
@@ -156,29 +151,25 @@ describe('AuthService', () => {
       const user = new User();
       user.id = '18ea976e-367b-4138-b68e-7aff3f7ae4de';
       user.email = email;
-      user.password = await bcrypt.hash(password, 10); // Simula o hash da senha
+      user.password = await bcrypt.hash(password, 10);
       user.role = UserRoles.User;
 
       const payload = { sub: user.id, email, role: user.role };
 
-      // Mocka o repositório e bcrypt
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValueOnce(true);
 
-      // Chama o método `signIn` do serviço
       const response = await service.signIn({ email, password });
 
-      // Valida a resposta
       expect(response).toEqual({
         accessToken: 'access-token',
-        refreshToken: 'access-token', // Substituir se o comportamento for diferente
+        refreshToken: 'access-token',
       });
 
-      // Valida as chamadas dos mocks
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
       expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
-      expect(jwtService.signAsync).toHaveBeenCalledWith(payload); // Verifica se o payload foi passado corretamente
+      expect(jwtService.signAsync).toHaveBeenCalledWith(payload);
     });
   });
 
@@ -218,14 +209,15 @@ describe('AuthService', () => {
     it('should throw an UnauthorizedException if the user is not found', async () => {
       const email = 'notfound@example.com';
 
-      // Mocking database response
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(null);
-      const signSpy = jest.spyOn(jwtService, 'signAsync'); // Espionando a função signAsync
+      const signSpy = jest.spyOn(jwtService, 'signAsync');
 
-      await expect(service.recoverPassword(email)).rejects.toThrow(UnauthorizedException);
+      await expect(service.recoverPassword(email)).rejects.toThrow(
+        UnauthorizedException,
+      );
 
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
-      expect(signSpy).not.toHaveBeenCalled(); // Garantindo que signAsync não foi chamado
+      expect(signSpy).not.toHaveBeenCalled();
     });
 
     it('should handle errors during email sending', async () => {
@@ -234,23 +226,21 @@ describe('AuthService', () => {
       user.id = '123';
       user.email = email;
 
-      // Mocking database and token generation
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
       jest.spyOn(jwtService, 'signAsync').mockResolvedValueOnce('mocked-token');
 
-      // Simula o erro no envio de e-mail sem tentar se conectar ao SMTP real
       sendMailMock.mockRejectedValueOnce(new Error('Email service error'));
 
-      // Verifica se o erro foi lançado corretamente
-      await expect(service.recoverPassword(email)).rejects.toThrow('Email service error');
+      await expect(service.recoverPassword(email)).rejects.toThrow(
+        'Email service error',
+      );
 
-      // Verifica as chamadas das funções mockadas
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
       expect(jwtService.signAsync).toHaveBeenCalledWith(
         { sub: user.id },
         { expiresIn: '30m' },
       );
-      expect(sendMailMock).toHaveBeenCalled(); // Verifica se o método de envio de e-mail foi chamado
+      expect(sendMailMock).toHaveBeenCalled();
     });
   });
 });

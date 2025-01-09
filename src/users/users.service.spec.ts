@@ -6,14 +6,12 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 
-// Mock para bcrypt
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
   hash: jest.fn(),
   genSalt: jest.fn(),
 }));
 
-// Função mock para o repositório de usuários
 const repositoryMockFactory = () => ({
   find: jest.fn(),
   findOneBy: jest.fn(),
@@ -31,7 +29,7 @@ describe('UsersService', () => {
         UsersService,
         {
           provide: getRepositoryToken(User),
-          useFactory: repositoryMockFactory,  // Usando a factory para o repositório
+          useFactory: repositoryMockFactory,
         },
       ],
     }).compile();
@@ -85,7 +83,7 @@ describe('UsersService', () => {
 
     beforeEach(() => {
       user = new User();
-      user.password = 'hashedPassword';  // Mantendo a senha antiga para o mock
+      user.password = 'hashedPassword';
 
       updateData = {
         firstName: 'John',
@@ -102,34 +100,32 @@ describe('UsersService', () => {
     it('should update and return the user', async () => {
       jest.spyOn(service, 'findOne').mockResolvedValueOnce(user);
 
-      // Mocking bcrypt.compare to return true
       (bcrypt.compare as jest.Mock).mockResolvedValueOnce(true);
 
-      // Mocking bcrypt.hash to return the new hashed password
       (bcrypt.hash as jest.Mock).mockResolvedValueOnce('newHashedPassword');
 
-      // Mocking bcrypt.genSalt to return a salt (mocked as a string)
       (bcrypt.genSalt as jest.Mock).mockResolvedValueOnce('salt');
 
-      // Mockando o save para retornar o usuário atualizado com a nova senha hashada
       jest.spyOn(userRepository, 'save').mockResolvedValueOnce({
         ...user,
         ...updateData,
-        password: 'newHashedPassword',  // Definindo a nova senha hashada corretamente
+        password: 'newHashedPassword',
       });
 
-      // Remover oldPassword e newPassword de updateData antes de fazer o expect
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { oldPassword, newPassword, ...updatedData } = updateData;
 
       const result = await service.update('123', updateData);
 
-      // Asserções
       expect(service.findOne).toHaveBeenCalledWith('123');
-      expect(bcrypt.compare).toHaveBeenCalledWith(updateData.oldPassword, 'hashedPassword');  // Comparando com a senha antiga
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        updateData.oldPassword,
+        'hashedPassword',
+      );
       expect(bcrypt.hash).toHaveBeenCalledWith(updateData.newPassword, 'salt');
       expect(userRepository.save).toHaveBeenCalledWith({
         ...user,
-        ...updatedData,  // Passando os dados atualizados, sem oldPassword e newPassword
+        ...updatedData,
         password: 'newHashedPassword',
       });
       expect(result).toEqual({
@@ -142,7 +138,9 @@ describe('UsersService', () => {
     it('should throw NotFoundException if the user does not exist', async () => {
       jest.spyOn(service, 'findOne').mockResolvedValueOnce(null);
 
-      await expect(service.update('123', updateData)).rejects.toThrow(NotFoundException);
+      await expect(service.update('123', updateData)).rejects.toThrow(
+        NotFoundException,
+      );
       expect(service.findOne).toHaveBeenCalledWith('123');
     });
 
@@ -151,9 +149,14 @@ describe('UsersService', () => {
 
       (bcrypt.compare as jest.Mock).mockResolvedValueOnce(false);
 
-      await expect(service.update('123', updateData)).rejects.toThrow(UnauthorizedException);
+      await expect(service.update('123', updateData)).rejects.toThrow(
+        UnauthorizedException,
+      );
       expect(service.findOne).toHaveBeenCalledWith('123');
-      expect(bcrypt.compare).toHaveBeenCalledWith(updateData.oldPassword, 'hashedPassword');
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        updateData.oldPassword,
+        'hashedPassword',
+      );
     });
   });
 });
