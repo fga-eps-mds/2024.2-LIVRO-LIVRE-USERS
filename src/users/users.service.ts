@@ -27,12 +27,12 @@ export class UsersService {
   async update(id: string, updateData: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
     if (!user) throw new NotFoundException();
-  
+
     user.firstName = updateData.firstName;
     user.lastName = updateData.lastName;
     user.email = updateData.email;
     user.phone = updateData.phone;
-  
+
     if (updateData.newPassword && updateData.oldPassword) {
       if (!(await bcrypt.compare(updateData.oldPassword, user.password))) {
         throw new UnauthorizedException('Please check your login credentials');
@@ -42,12 +42,10 @@ export class UsersService {
         await bcrypt.genSalt(10),
       );
     }
-  
-    // Salva o usuário atualizado e retorna diretamente o usuário atualizado
+
     await this.usersRepository.save(user);
-    return user;
+    return this.findOne(id);
   }
-  
 
   async remove(id: string): Promise<void> {
     await this.usersRepository.delete(id);
