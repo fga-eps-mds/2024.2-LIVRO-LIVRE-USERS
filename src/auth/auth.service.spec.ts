@@ -6,10 +6,10 @@ import { User, UserRoles } from '../database/entities/user.entity';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { SignUpDto } from '../auth/dtos/signUp.dto';
 import * as bcrypt from 'bcryptjs';
-// eslint-disable-next-line import/no-unresolved
 import { repositoryMockFactory } from '../../test/database/utils';
 import { jwtContants } from './auth.constants';
 import { UnauthorizedException } from '@nestjs/common';
+import * as nodemailer from 'nodemailer';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -47,12 +47,11 @@ describe('AuthService', () => {
     jest.spyOn(bcrypt, 'hash').mockResolvedValueOnce('hashed-password');
     jest.spyOn(bcrypt, 'genSalt').mockResolvedValueOnce(10);
 
-    // Mock nodemailer transport
-
-    //sendMailMock = jest.fn();
-    //(nodemailer.createTransport as jest.Mock).mockReturnValue({
-    //  sendMail: sendMailMock,
-    //}); // error nodemailer (corrigir)
+    // Mock do transporte do nodemailer para evitar conexões reais
+    sendMailMock = jest.fn();
+    jest.spyOn(nodemailer, 'createTransport').mockReturnValue({
+      sendMail: sendMailMock,
+    } as any); // Adicionando o mock do transporte de e-mail
   });
 
   describe('signUp', () => {
@@ -131,7 +130,7 @@ describe('AuthService', () => {
       }
     });
   });
-  // corrigir implementação no teste de signIn que recupera o jwt (erro no secret)
+
   describe('signIn', () => {
     it('should throw an UnauthorizedException for invalid credentials', async () => {
       const email = 'test@email.com';
@@ -151,7 +150,6 @@ describe('AuthService', () => {
       expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
     });
 
-    //error no jwtService.signAsync (help)
     it('should return a signed token on successful login', async () => {
       const email = 'test@email.com';
       const password = 'validPassword';
@@ -216,41 +214,37 @@ describe('AuthService', () => {
     });
   });
 
-  // corrigir implementação do teste de email recover
   describe('recoverPassword', () => {
-    let sendMailMock: jest.Mock;
-  
-    beforeEach(() => {
-      sendMailMock = jest.fn(); // Inicializa o mock para sendMailMock
-    });
-  
     it('should throw an UnauthorizedException if the user is not found', async () => {
       const email = 'notfound@example.com';
-  
+
       // Mocking database response
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(null);
       const signSpy = jest.spyOn(jwtService, 'signAsync'); // Espionando a função signAsync
-  
+
       await expect(service.recoverPassword(email)).rejects.toThrow(UnauthorizedException);
-  
+
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
       expect(signSpy).not.toHaveBeenCalled(); // Garantindo que signAsync não foi chamado
-      expect(sendMailMock).not.toHaveBeenCalled(); // Garantindo que o envio de e-mail não foi chamado
     });
-  
-    it.skip('should handle errors during email sending', async () => {
+
+    it('should handle errors during email sending', async () => {
       const email = 'test@example.com';
       const user = new User();
       user.id = '123';
       user.email = email;
-  
+
       // Mocking database and token generation
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
       jest.spyOn(jwtService, 'signAsync').mockResolvedValueOnce('mocked-token');
-      sendMailMock.mockRejectedValueOnce(new Error('Email service error')); // Simula erro no envio de e-mail
-  
+
+      // Simula o erro no envio de e-mail sem tentar se conectar ao SMTP real
+      sendMailMock.mockRejectedValueOnce(new Error('Email service error'));
+
+      // Verifica se o erro foi lançado corretamente
       await expect(service.recoverPassword(email)).rejects.toThrow('Email service error');
-  
+
+      // Verifica as chamadas das funções mockadas
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
       expect(jwtService.signAsync).toHaveBeenCalledWith(
         { sub: user.id },
