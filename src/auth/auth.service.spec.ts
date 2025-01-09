@@ -19,19 +19,24 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        JwtModule.register({
-          global: true,
-          secret: jwtContants.secret,
-        }),
-      ],
       providers: [
         AuthService,
         {
           provide: getRepositoryToken(User),
           useFactory: repositoryMockFactory,
         },
-        JwtService,
+        {
+          provide: JwtService,
+          useValue: {
+            signAsync: jest.fn(async (payload) => {
+              if (payload) {
+                return 'access-token';
+              }
+              throw new Error('Payload não fornecido');
+            }),
+            verifyAsync: jest.fn(async () => 'refresh-token'),
+          },
+        },
       ],
     }).compile();
 
@@ -147,35 +152,35 @@ describe('AuthService', () => {
     });
 
     //error no jwtService.signAsync (help)
-    it.skip('should return a signed token on successful login', async () => {
+    it('should return a signed token on successful login', async () => {
       const email = 'test@email.com';
       const password = 'validPassword';
       const user = new User();
       user.id = '18ea976e-367b-4138-b68e-7aff3f7ae4de';
       user.email = email;
-      // Hash the password using bcrypt before setting it to the user object
-      user.password = await bcrypt.hash(password, 10); // Adjust the cost factor as needed
+      user.password = await bcrypt.hash(password, 10); // Simula o hash da senha
       user.role = UserRoles.User;
 
       const payload = { sub: user.id, email, role: user.role };
 
+      // Mocka o repositório e bcrypt
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValueOnce(true);
-      jest.spyOn(jwtService, 'signAsync').mockResolvedValue('access-token');
-      jest.spyOn(jwtService, 'signAsync').mockResolvedValue('refresh-token');
-      jest.spyOn(jwtService, 'signAsync').mockResolvedValue('secret');
 
+      // Chama o método `signIn` do serviço
       const response = await service.signIn({ email, password });
 
+      // Valida a resposta
       expect(response).toEqual({
         accessToken: 'access-token',
-        refreshToken: 'access-token', // Assuming same payload is used for both tokens (modify if different)
+        refreshToken: 'access-token', // Substituir se o comportamento for diferente
       });
 
+      // Valida as chamadas dos mocks
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password); // Password comparison with hashed value
+      expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
-      expect(jwtService.signAsync).toHaveBeenCalledWith(payload);
+      expect(jwtService.signAsync).toHaveBeenCalledWith(payload); // Verifica se o payload foi passado corretamente
     });
   });
 
