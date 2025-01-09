@@ -11,9 +11,9 @@ import {
 } from '@nestjs/common';
 import { UpdateUserDto } from './dtos/updateUser.dto';
 import { AuthGuard } from '../auth/auth.guard';
-import { Roles } from 'src/auth/roles.decorator';
-import { UserRoles } from 'src/database/entities/user.entity';
-import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRoles } from '../database/entities/user.entity';
+import { RolesGuard } from '../auth/roles.guard';
 
 @Controller('users')
 export class UsersController {
