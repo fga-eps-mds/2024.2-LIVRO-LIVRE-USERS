@@ -130,24 +130,18 @@ describe('UsersService', () => {
       expect(service.findOne).toHaveBeenCalledWith('123');
     });
 
-    it.skip('should throw UnauthorizedException if the old password is incorrect', async () => {
+    it('should throw UnauthorizedException if the old password is incorrect', async () => {
       jest.spyOn(service, 'findOne').mockResolvedValueOnce(user);
-      //jest.spyOn(bcrypt, 'compare').mockResolvedValueOnce(false);
-
-      // const updateData = {
-      //   oldPassword: 'wrongPassword',
-      //   newPassword: 'newPassword',
-      // };
-
-      // await expect(service.update('123', updateData)).rejects.toThrow(
-      //   UnauthorizedException,
-      // );
-
-      //expect(service.findOne).toHaveBeenCalledWith('123');
-      // expect(bcrypt.compare).toHaveBeenCalledWith(
-      //   updateData.oldPassword,
-      //   user.password,
-      // );
+    
+      await expect(
+        service.update('123', updateData),
+      ).rejects.toThrow(UnauthorizedException);
+    
+      expect(service.findOne).toHaveBeenCalledWith('123');
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        updateData.oldPassword,
+        user.password,
+      );
     });
   });
 });
