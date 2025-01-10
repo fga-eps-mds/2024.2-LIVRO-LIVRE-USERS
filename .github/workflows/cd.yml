@@ -4,7 +4,26 @@ on:
    branches:
      - main
 jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      DB_PORT: ${{ secrets.LIVRO_LIVRE_DB_PORT }}
+      DB_HOST: ${{ secrets.LIVRO_LIVRE_DB_HOST }}
+      DB_USER: ${{ secrets.LIVRO_LIVRE_DB_USER }}
+      DB_PASSWORD: ${{ secrets.LIVRO_LIVRE_DB_PASSWORD }}
+      DB_NAME: ${{ secrets.LIVRO_LIVRE_DB_NAME }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          npm install
+      - name: Run migrations
+        run: |
+          npm run migration:run
+
   build:
+    needs: migrate
     runs-on: ubuntu-latest # Setup an environment to run the action
     steps:
       - uses: actions/checkout@v2 # This actions copy the repository on the environment
