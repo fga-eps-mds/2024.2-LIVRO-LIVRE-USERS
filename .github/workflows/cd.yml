@@ -1,0 +1,22 @@
+name: CD
+on:
+ push:
+   branches:
+     - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build, Push and Release a Docker container to Heroku. 
+        uses: gonuit/heroku-docker-deploy@v1.3.3
+        with:
+          email: ${{ secrets.LIVRO_LIVRE_HEROKU_EMAIL }}
+          heroku_api_key: ${{ secrets.LIVRO_LIVRE_HEROKU_API_KEY }}
+          heroku_app_name: "livro-livre-users"
+          dockerfile_directory: ./
+          dockerfile_name: Dockerfile
+          docker_options: "--no-cache"
+          process_type: web
