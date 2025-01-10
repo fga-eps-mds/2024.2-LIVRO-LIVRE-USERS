@@ -112,6 +112,8 @@ describe('UsersService', () => {
         password: 'newHashedPassword',
       });
 
+      jest.spyOn(service, 'findOne').mockResolvedValueOnce(user);
+
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { oldPassword, newPassword, ...updatedData } = updateData;
 
