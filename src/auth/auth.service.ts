@@ -17,8 +17,12 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async signIn({ email, password }: SignInDto): Promise<SignInResponseDto> {
-    const user = await this.usersRepository.findOneBy({ email });
+  async signIn({
+    email,
+    password,
+    role,
+  }: SignInDto): Promise<SignInResponseDto> {
+    const user = await this.usersRepository.findOneBy({ email, role });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('E-mail ou senha inválidos.');
     }
@@ -41,7 +45,11 @@ export class AuthService {
       password: await bcrypt.hash(dto.password, await bcrypt.genSalt(10)),
     });
     await this.usersRepository.save(user);
-    return this.signIn({ email: dto.email, password: dto.password });
+    return this.signIn({
+      email: dto.email,
+      password: dto.password,
+      role: user.role,
+    });
   }
 
   async getProfile(data: { sub: string; email: string }): Promise<User> {

@@ -130,6 +130,7 @@ describe('AuthService', () => {
     it('should throw an UnauthorizedException for invalid credentials', async () => {
       const email = 'test@email.com';
       const password = 'wrongPassword';
+      const role = UserRoles.User;
       const user = new User();
       user.email = email;
       user.password = 'hashedPassword';
@@ -137,17 +138,18 @@ describe('AuthService', () => {
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValueOnce(false);
 
-      await expect(service.signIn({ email, password })).rejects.toThrow(
+      await expect(service.signIn({ email, password, role })).rejects.toThrow(
         UnauthorizedException,
       );
 
-      expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
+      expect(userRepository.findOneBy).toHaveBeenCalledWith({ email, role });
       expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
     });
 
     it('should return a signed token on successful login', async () => {
       const email = 'test@email.com';
       const password = 'validPassword';
+      const role = UserRoles.User;
       const user = new User();
       user.id = '18ea976e-367b-4138-b68e-7aff3f7ae4de';
       user.email = email;
@@ -159,14 +161,14 @@ describe('AuthService', () => {
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValueOnce(true);
 
-      const response = await service.signIn({ email, password });
+      const response = await service.signIn({ email, password, role });
 
       expect(response).toEqual({
         accessToken: 'access-token',
         refreshToken: 'access-token',
       });
 
-      expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
+      expect(userRepository.findOneBy).toHaveBeenCalledWith({ email, role });
       expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
       expect(jwtService.signAsync).toHaveBeenCalledWith(payload);
