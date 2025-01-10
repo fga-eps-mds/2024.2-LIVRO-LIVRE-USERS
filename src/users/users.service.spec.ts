@@ -15,6 +15,7 @@ jest.mock('bcrypt', () => ({
 const repositoryMockFactory = () => ({
   find: jest.fn(),
   findOneBy: jest.fn(),
+  findAndCount: jest.fn(),
   save: jest.fn(),
   delete: jest.fn(),
 });
@@ -41,11 +42,19 @@ describe('UsersService', () => {
   describe('findAll', () => {
     it('should return an array of users', async () => {
       const users = [new User(), new User()];
-      jest.spyOn(userRepository, 'find').mockResolvedValueOnce(users);
+      jest
+        .spyOn(userRepository, 'findAndCount')
+        .mockResolvedValueOnce([users, 2]);
 
-      const result = await service.findAll();
-      expect(result).toEqual(users);
-      expect(userRepository.find).toHaveBeenCalledTimes(1);
+      const result = await service.findAll({
+        perPage: 10,
+        page: 0,
+      });
+      expect(result).toEqual({
+        items: users,
+        total: 2,
+      });
+      expect(userRepository.findAndCount).toHaveBeenCalledTimes(1);
     });
   });
 
