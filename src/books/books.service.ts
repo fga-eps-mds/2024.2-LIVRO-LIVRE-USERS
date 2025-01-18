@@ -1,29 +1,56 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Book } from '../database/entities/book.entity';
 import { SearchBooksDto } from './dtos/searchBooks.dto';
 
 @Injectable()
 export class BooksService {
+    constructor(
+        @InjectRepository(Book)
+        private booksRepository: Repository<Book>,
+    ) { }
+
     async searchBooks(searchParams: SearchBooksDto) {
-        const { title, author, theme, page, limit } = searchParams;
+        let { title, author, theme, page, limit } = searchParams;
+
+        // Garantir que os valores de page e limit sejam números
+        page = parseInt(page as any, 10) || 1;  // Se não for um número, definir como 1
+        limit = parseInt(limit as any, 10) || 10;  // Se não for um número, definir como 10
         const offset = (page - 1) * limit;
 
         const filters: any = {};
-        /* Filtros Exemplo em MondoDb
-        if (title) filters.title = { $regex: new RegExp(title, 'i') }; 
-        if (author) filters.author = { $regex: new RegExp(author, 'i') };
-        if (theme) filters.theme = { $regex: new RegExp(theme, 'i') };
-        */
+        if (title) filters.title = title;
+        if (author) filters.author = author;
+        if (theme) filters.theme = theme;
 
-        const results = [];
-        const totalResults = 0;
-        if (results.length === 0) {
+        try {
+            const [books, totalBooks] = await this.booksRepository.findAndCount({
+                where: filters,
+                skip: offset,
+                take: limit,
+            });
+
+            const totalPages = Math.ceil(totalBooks / limit);
+
+            if (books.length === 0) {
+                return {
+                    message: 'Nenhum livro encontrado para a pesquisa realizada. Tente outros termos.',
+                    totalPages: 0,
+                    currentPage: page,
+                    results: [],
+                };
+            }
+
             return {
-                message: 'Nenhum livro encontrado para a pesquisa realizada. Tente outros termos.',
-                totalPages: 0,
+                message: 'Livros encontrados com sucesso!',
+                totalPages,
                 currentPage: page,
-                results: [],
+                results: books,
             };
+        } catch (error) {
+            console.error(error);
+            throw new Error('Erro ao realizar a busca no banco de dados');
         }
-        
     }
 }
