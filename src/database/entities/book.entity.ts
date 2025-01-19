@@ -1,3 +1,4 @@
+import { HttpStatus } from '@nestjs/common';
 import {
   Column,
   CreateDateColumn,
@@ -5,6 +6,11 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
+export enum Status {
+  AVAILABLE = "available",
+  NOTAVAILABLE = "notAvailable",
+}
 
 @Entity()
 export class Book {
@@ -26,4 +32,10 @@ export class Book {
   @Column({ nullable: true })
   coverUrl: string; // URL da capa do livro
 
+  @Column({
+    type: "enum",
+    enum: Status,
+    default: Status.AVAILABLE,
+  })
+  role: Status;
 }
