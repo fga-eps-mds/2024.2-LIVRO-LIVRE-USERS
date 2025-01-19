@@ -14,9 +14,8 @@ export class BooksService {
     async searchBooks(searchParams: SearchBooksDto) {
         let { title, author, theme, page, limit } = searchParams;
 
-        // Garantir que os valores de page e limit sejam números
-        page = parseInt(page as any, 10) || 1;  // Se não for um número, definir como 1
-        limit = parseInt(limit as any, 10) || 10;  // Se não for um número, definir como 10
+        page = parseInt(page as any, 10) || 1;  
+        limit = parseInt(limit as any, 10) || 10;  
         const offset = (page - 1) * limit;
 
         const filters: any = {};
@@ -29,6 +28,10 @@ export class BooksService {
                 where: filters,
                 skip: offset,
                 take: limit,
+                order:{
+                    averageRating : 'DESC',
+                    title: 'ASC',
+                }
             });
 
             const totalPages = Math.ceil(totalBooks / limit);
