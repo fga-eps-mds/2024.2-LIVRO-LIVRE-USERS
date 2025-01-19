@@ -4,6 +4,14 @@ import { Repository } from 'typeorm';
 import { Book } from '../database/entities/book.entity';
 import { SearchBooksDto } from './dtos/searchBooks.dto';
 
+
+interface SearchBooksResult {
+    message: string;
+    totalPages: number;
+    currentPage: number;
+    results: Book[];
+}
+
 @Injectable()
 export class BooksService {
     constructor(
@@ -11,7 +19,7 @@ export class BooksService {
         private booksRepository: Repository<Book>,
     ) { }
 
-    async searchBooks(searchParams: SearchBooksDto) {
+    async searchBooks(searchParams: SearchBooksDto): Promise<SearchBooksResult> {
         let { title, author, theme, page, limit } = searchParams;
 
         page = parseInt(page as any, 10) || 1;  
