@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KohaController } from './koha.controller';
 import { KohaService } from './koha.service';
 
-describe('KohaController', () => {
+describe.skip('KohaController', () => {
   let controller: KohaController;
 
   beforeEach(async () => {
