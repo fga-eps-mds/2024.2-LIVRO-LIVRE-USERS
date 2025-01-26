@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { UpdateUserDto } from './dtos/updateUser.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { ListUsersQueryDto } from './dtos/listUsersQuery.dto';
@@ -72,5 +72,11 @@ export class UsersService {
 
   async remove(id: string): Promise<void> {
     await this.usersRepository.delete(id);
+  }
+
+  async findByIds(ids: string[]): Promise<User[]> {
+    return this.usersRepository.find({
+      where: { id: In(ids) },
+    });
   }
 }
