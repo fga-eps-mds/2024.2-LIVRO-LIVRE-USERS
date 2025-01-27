@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRoles } from '../database/entities/user.entity';
@@ -16,6 +16,26 @@ export class AuthService {
     private usersRepository: Repository<User>,
     private jwtService: JwtService,
   ) {}
+
+  private validatePassword(password: string): void {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (password.length < minLength) {
+      throw new BadRequestException('A senha deve ter pelo menos 8 caracteres.');
+    }
+    if (!hasUpperCase) {
+      throw new BadRequestException('A senha deve conter pelo menos uma letra maiúscula.');
+    }
+    if (!hasNumber) {
+      throw new BadRequestException('A senha deve conter pelo menos um número.');
+    }
+    if (!hasSpecialChar) {
+      throw new BadRequestException('A senha deve conter pelo menos um caractere especial.');
+    }
+  }
 
   async signIn({
     email,
@@ -35,10 +55,13 @@ export class AuthService {
   }
 
   async signUp(dto: SignUpDto): Promise<SignInResponseDto> {
+    this.validatePassword(dto.password); // Validate password before proceeding
+
     const userExists = await this.usersRepository.findOneBy({
       email: dto.email,
     });
     if (userExists) throw new UnauthorizedException('Usuário já cadastrado.');
+
     const user = this.usersRepository.create({
       ...dto,
       role: UserRoles.User,
