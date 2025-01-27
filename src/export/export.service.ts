@@ -1,63 +1,62 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { parse } from 'json2csv';
 import { UsersService } from '../users/users.service';
 
 export interface ExportOptions {
-    userIds?: string[];
-    bookIds?: string[];
-    authors?: string[];
-    themes?: string[];
+  userIds: string[];
 }
 
 @Injectable()
 export class ExportService {
-    private readonly logger = new Logger(ExportService.name);
+  constructor(private readonly userService: UsersService) {}
 
-    constructor(private readonly userService: UsersService) {}
+  async generateCsv(options: ExportOptions): Promise<string> {
+    try {
+      const { userIds } = options;
 
-    async generateCsv(options: ExportOptions): Promise<string> {
-        try {
-            const { userIds, bookIds, authors, themes } = options;
+      if (!userIds || userIds.length === 0) {
+        console.log('Nenhum usuário encontrado.');
+        throw new Error('Nenhum usuário encontrado para exportação. Verifique os IDs fornecidos.');
+      }
 
-            const users = userIds?.length ? await this.userService.findByIds(userIds) : [];
+      const users = userIds.length ? await this.userService.findByIds(userIds) : [];
 
-            const data = [
-                ...users.map((user) => ({
-                    type: 'User',
-                    id: user.id,
-                    name: `${user.firstName} ${user.lastName}`,
-                    lastName: user.lastName,
-                    email: user.email,
-                    phone: user.phone,
-                    createdAt: user.createdAt,
-                    updatedAt: user.updatedAt,
-                })),
-            ];
+      const foundIds = users.map((user) => user.id);
+      const missingIds = userIds.filter((id) => !foundIds.includes(id));
 
-            if (!data.length) {
-                this.logger.warn('Nenhum dado encontrado para exportação.');
-                throw new Error('Nenhum dado encontrado para exportação.');
-            }
+      if (missingIds.length) {
+        console.log(`IDs não encontrados: ${missingIds}`);
+        throw new Error(`Os seguintes IDs não foram encontrados no banco de dados: ${missingIds.join(', ')}`);
+      }
 
-            // Campos do CSV
-            const fields = [
-                { label: 'ID', value: 'id' },
-                { label: 'Nome', value: 'name' },
-                { label: 'Sobrenome', value: 'lastName' },
-                { label: 'Email', value: 'email' },
-                { label: 'Telefone', value: 'phone' },
-                { label: 'Criado em', value: 'createdAt' },
-                { label: 'Atualizado em', value: 'updatedAt' },
-            ];
+      const data = users.map((user) => ({
+        id: user.id,
+        name: `${user.firstName} ${user.lastName}`,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }));
 
-            this.logger.log('Iniciando geração do CSV...');
-            const csv = parse(data, { fields });
-            this.logger.log('CSV gerado com sucesso.');
+      const fields = [
+        { label: 'ID', value: 'id' },
+        { label: 'Nome', value: 'name' },
+        { label: 'Sobrenome', value: 'lastName' },
+        { label: 'Email', value: 'email' },
+        { label: 'Telefone', value: 'phone' },
+        { label: 'Criado em', value: 'createdAt' },
+        { label: 'Atualizado em', value: 'updatedAt' },
+      ];
 
-            return csv;
-        } catch (error) {
-            this.logger.error('Erro ao gerar o CSV:', error);
-            throw new Error('Erro ao gerar o arquivo CSV. Verifique os dados fornecidos.');
-        }
+      console.log(`Gerando CSV para ${userIds.length} usuários.`);
+      const csv = parse(data, { fields });
+      console.log('CSV gerado com sucesso.');
+
+      return csv;
+    } catch (error) {
+      console.log(`Erro ao gerar o CSV: ${error.message}`);
+      throw new Error(error.message);
     }
+  }
 }

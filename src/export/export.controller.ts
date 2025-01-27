@@ -4,41 +4,37 @@ import { Response } from 'express';
 
 @Controller('export')
 export class ExportController {
-    constructor(private readonly exportService: ExportService) {}
+  constructor(private readonly exportService: ExportService) { }
 
-    @Get()
-    async exportToCsv(
-        @Query('userIds') userIds: string,
-        @Res() res: Response,
-        @Query('userName') userName?: string,
-        @Query('bookIds') bookIds?: string,
-        @Query('authors') authors?: string,
-        @Query('themes') themes?: string,
-    ) {
-        try {
-            const userIdsArray = userIds ? userIds.split(',') : [];
-            const bookIdsArray = bookIds ? bookIds.split(',') : [];
-            const authorsArray = authors ? authors.split(',') : [];
-            const themesArray = themes ? themes.split(',') : [];
+  @Get()
+  async exportToCsv(
+    @Query('userIds') userIds: string | undefined,
+    @Res() res: Response,
+  ) {
+    try {
+      if (!userIds) {
+        console.log('Nenhum userId foi fornecido na query.');
+        return res.status(400).json({
+          message: 'Parâmetro "userIds" é obrigatório.',
+        });
+      }
 
-            const options: ExportOptions = {
-                userIds: userIdsArray,
-                bookIds: bookIdsArray,
-                authors: authorsArray,
-                themes: themesArray,
-            };
+      const userIdsArray = userIds.split(',').map((id) => id.trim());
 
-            const csv = await this.exportService.generateCsv(options);
+      const options: ExportOptions = { userIds: userIdsArray };
 
-            res.header('Content-Type', 'text/csv');
-            res.attachment('export.csv');
-            res.send(csv);
-        } catch (error) {
-            console.error('Erro ao gerar o arquivo:', error);
+      const csv = await this.exportService.generateCsv(options);
 
-            res.status(500).json({
-                message: 'Erro ao gerar o arquivo CSV. Tente novamente mais tarde.',
-            });
-        }
+      res.header('Content-Type', 'text/csv');
+      res.attachment('export.csv');
+      return res.send(csv);
+    } catch (error) {
+      console.log(`Erro ao gerar o CSV: ${error.message}`);
+      return res.status(500).json({
+        message: error.message,
+      });
     }
+  }
 }
+
+export default ExportController;

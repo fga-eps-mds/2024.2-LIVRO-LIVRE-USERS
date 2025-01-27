@@ -21,7 +21,7 @@ describe('AppModule', () => {
     }
   });
 
-  jest.mock('src/users/users.service', () => {
+  jest.mock('../users/users.service', () => {
     return jest.requireActual('../../users/users.service');
   });
 
