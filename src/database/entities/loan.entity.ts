@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 @Entity()
@@ -18,6 +24,7 @@ export class LoanHistory {
   @Column({ nullable: true })
   returnedAt: Date | null;
 
-  @ManyToOne(() => User, (user) => user.loans)
+  @ManyToOne(() => User, (user) => user.loanHistory)
+  @JoinColumn({ name: 'userId' })
   user: User;
 }

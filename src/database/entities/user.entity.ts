@@ -4,7 +4,9 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { LoanHistory } from './loan.entity';
 
 export enum UserRoles {
   Admin = 'admin',
@@ -39,5 +41,7 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
-  loans: any;
+
+  @OneToMany(() => LoanHistory, (loanHistory) => loanHistory.user)
+  loanHistory: LoanHistory[];
 }
