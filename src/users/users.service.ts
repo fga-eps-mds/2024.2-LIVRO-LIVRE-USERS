@@ -3,20 +3,22 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { books } from './utils/mockBooks';
+import { Book, mockBooks } from './utils/mockBooks';
 import { UpdateUserDto } from './dtos/updateUser.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { LoanHistory } from '../database/entities/loan.entity';
 import { User } from '../database/entities/user.entity';
 import * as bcrypt from 'bcrypt';
-import { ListUsersQueryDto } from './dtos/listUsersQuery.dto';
-import { findUserBooksQueryDto } from './dtos/findUserBooksQueryDto.dto';
+import { ListUsersQueryDto } from './dtos/listUserQuery.dto';
 
-interface Book {
-  title: string;
-  author: string;
-  year: number;
-  userIds: string[]; // Array de IDs de usuários que pegaram o livro
+export interface LoanRecord {
+  id: string;
+  userId: string;
+  bookId: string;
+  borrowedAt: Date;
+  returnedAt: Date | null;
+  book: Book;
 }
 
 @Injectable()
@@ -24,6 +26,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(LoanHistory)
+    private loanHistoryRepository: Repository<LoanHistory>,
   ) {}
 
   async findAll(query: ListUsersQueryDto): Promise<{
@@ -83,23 +87,29 @@ export class UsersService {
     await this.usersRepository.delete(id);
   }
 
-  async getHistory(query: findUserBooksQueryDto): Promise<{
-    items: Book[];
-    total: number;
-  }> {
-    // Filtra os livros que foram pegos pelo usuário específico
-    const filteredBooks = books.filter(book => book.userIds.includes(query.userId));
+  async getUserLoanHistory(userId: string): Promise<LoanRecord[]> {
+    const loanRecords = await this.loanHistoryRepository.find({
+      where: { userId },
+      order: { borrowedAt: 'DESC' },
+    });
 
-    // Paginação: define a quantidade de itens por página (take) e a página atual (skip)
-    const take = query.perPage || 10;
-    const skip = (query.page - 1) * take || 0;
+    if (!loanRecords.length) {
+      throw new NotFoundException('No loan records found for this user.');
+    }
 
-    // Faz a paginação
-    const paginatedBooks = filteredBooks.slice(skip, skip + take);
-
-    return {
-      items: paginatedBooks,
-      total: filteredBooks.length, // Total de livros que foram pegos pelo usuário
-    };
+    return loanRecords.map((record) => ({
+      id: record.id,
+      userId: record.userId,
+      bookId: record.bookId,
+      borrowedAt: record.borrowedAt,
+      returnedAt: record.returnedAt,
+      book: mockBooks.find((book) => book.id === record.bookId) || {
+        id: record.bookId,
+        title: 'Unknown Book',
+        author: 'Unknown Author',
+        isbn: 'N/A',
+        publishedYear: 0,
+      },
+    }));
   }
 }

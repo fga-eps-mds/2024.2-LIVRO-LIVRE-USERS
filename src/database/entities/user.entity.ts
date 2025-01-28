@@ -39,4 +39,5 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
+  loans: any;
 }
