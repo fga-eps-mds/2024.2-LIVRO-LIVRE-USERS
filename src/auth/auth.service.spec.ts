@@ -7,9 +7,10 @@ import { JwtService } from '@nestjs/jwt';
 import { SignUpDto } from '../auth/dtos/signUp.dto';
 import * as bcrypt from 'bcryptjs';
 import { repositoryMockFactory } from '../../test/database/utils';
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { SignInDto } from './dtos/signIn.dto';
+
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -44,15 +45,14 @@ describe('AuthService', () => {
     userRepository = module.get<Repository<User>>(getRepositoryToken(User));
     jwtService = module.get<JwtService>(JwtService);
 
-    jest.spyOn(bcrypt, 'hash').mockResolvedValueOnce('hashed-password');
-    jest.spyOn(bcrypt, 'genSalt').mockResolvedValueOnce(10);
+    // Removido o mock de bcrypt do beforeEach
 
     sendMailMock = jest.fn();
     jest.spyOn(nodemailer, 'createTransport').mockReturnValue({
       sendMail: sendMailMock,
     } as any);
   });
-//signUp
+
   describe('signUp', () => {
     it('should create a new user and return a signed token', async () => {
       const signUpDto: SignUpDto = {
@@ -60,7 +60,7 @@ describe('AuthService', () => {
         lastName: 'User',
         email: 'test@email.com',
         phone: '123456789',
-        password: 'Password123!',
+        password: 'Password123!', // Senha correta
       };
 
       const user = new User();
@@ -72,13 +72,16 @@ describe('AuthService', () => {
       user.role = UserRoles.User;
 
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(null);
-
       jest.spyOn(userRepository, 'create').mockReturnValue(user);
       jest.spyOn(userRepository, 'save').mockResolvedValue(user);
       jest.spyOn(service, 'signIn').mockResolvedValue({
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
       });
+
+      // Mock de bcrypt DENTRO do teste, depois de definir a senha correta
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed-password');
+      jest.spyOn(bcrypt, 'genSalt').mockResolvedValue(10);
 
       const response = await service.signUp(signUpDto);
 
@@ -89,9 +92,9 @@ describe('AuthService', () => {
       expect(userRepository.create).toHaveBeenCalledWith({
         ...signUpDto,
         role: UserRoles.User,
-        password: expect.any(String),
+        password: 'hashed-password', // Agora o password está sendo hasheado corretamente
       });
-      expect(bcrypt.hash).toHaveBeenCalledWith('password', 10);
+      expect(bcrypt.hash).toHaveBeenCalledWith('Password123!', 10);
       expect(userRepository.save).toHaveBeenCalled();
       expect(response).toEqual({
         accessToken: 'access-token',
@@ -100,85 +103,78 @@ describe('AuthService', () => {
     });
 
     it('should throw an error if user already exists', async () => {
-      const signUpDto: SignUpDto = {
+        const signUpDto: SignUpDto = {
+          firstName: 'Test',
+          lastName: 'User',
+          email: 'test@email.com',
+          phone: '123456789',
+          password: 'Password123!',
+        };
+
+        const existingUser = new User();
+        existingUser.email = 'test@email.com';
+
+        jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(existingUser);
+
+        await expect(service.signUp(signUpDto)).rejects.toThrow(BadRequestException);
+        await expect(service.signUp(signUpDto)).rejects.toThrowError('Usuário já cadastrado.');
+
+        expect(userRepository.create).not.toHaveBeenCalled();
+        expect(userRepository.save).not.toHaveBeenCalled();
+      });
+
+    it('should reject passwords shorter than 8 characters', async () => {
+      const invalidDto: SignUpDto = {
         firstName: 'Test',
         lastName: 'User',
         email: 'test@email.com',
         phone: '123456789',
-        password: 'password',
+        password: 'Short1!',
       };
-
-      const existingUser = new User();
-      existingUser.email = 'existing@email.com';
-
-      jest
-        .spyOn(userRepository, 'findOneBy')
-        .mockResolvedValueOnce(existingUser);
-
-      try {
-        await service.signUp(signUpDto);
-        fail('An error should be thrown');
-      } catch (error) {
-        expect(error).toBeInstanceOf(UnauthorizedException);
-        expect((error as Error).message).toBe('Usuário já cadastrado.');
-        expect(userRepository.create).not.toHaveBeenCalled();
-        expect(userRepository.save).not.toHaveBeenCalled();
-      }
-    });
-  });
-
-  describe('validatePassword', () => {
-    const validPassword = 'ValidPassword123!';
-    const baseUser: SignUpDto = {
-      firstName: 'Test',
-      lastName: 'User',
-      email: 'test@email.com',
-      phone: '123456789',
-      password: validPassword,
-    };
-  
-    it('should accept a valid password', async () => {
-      jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(null);
-      jest.spyOn(userRepository, 'create').mockReturnValue(new User());
-      jest.spyOn(userRepository, 'save').mockResolvedValue(new User());
-  
-      await expect(service.signUp(baseUser)).resolves.toBeDefined();
-      expect(userRepository.findOneBy).toHaveBeenCalled();
-    });
-  
-    it('should reject passwords shorter than 8 characters', async () => {
-      const invalidDto = { ...baseUser, password: 'Short1!' };
-      await expect(service.signUp(invalidDto)).rejects.toThrowError(
-        'A senha deve ter pelo menos 8 caracteres.',
-      );
+      await expect(service.signUp(invalidDto)).rejects.toThrow(BadRequestException);
+      await expect(service.signUp(invalidDto)).rejects.toThrowError('A senha deve ter pelo menos 8 caracteres.');
       expect(userRepository.findOneBy).not.toHaveBeenCalled();
     });
-  
+
     it('should reject passwords without uppercase letters', async () => {
-      const invalidDto = { ...baseUser, password: 'nopassword123!' };
-      await expect(service.signUp(invalidDto)).rejects.toThrowError(
-        'A senha deve conter pelo menos uma letra maiúscula.',
-      );
+      const invalidDto: SignUpDto = {
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'test@email.com',
+        phone: '123456789',
+        password: 'nopassword123!',
+      };
+      await expect(service.signUp(invalidDto)).rejects.toThrow(BadRequestException);
+      await expect(service.signUp(invalidDto)).rejects.toThrowError('A senha deve conter pelo menos uma letra maiúscula.');
       expect(userRepository.findOneBy).not.toHaveBeenCalled();
     });
-  
+
     it('should reject passwords without numbers', async () => {
-      const invalidDto = { ...baseUser, password: 'NoNumberPassword!' };
-      await expect(service.signUp(invalidDto)).rejects.toThrowError(
-        'A senha deve conter pelo menos um número.',
-      );
-      expect(userRepository.findOneBy).not.toHaveBeenCalled();
+        const invalidDto: SignUpDto = {
+          firstName: 'Test',
+          lastName: 'User',
+          email: 'test@email.com',
+          phone: '123456789',
+          password: 'NoNumberPassword!',
+        };
+        await expect(service.signUp(invalidDto)).rejects.toThrow(BadRequestException);
+        await expect(service.signUp(invalidDto)).rejects.toThrowError('A senha deve conter pelo menos um número.');
+        expect(userRepository.findOneBy).not.toHaveBeenCalled();
+      });
+
+      it('should reject passwords without special characters', async () => {
+        const invalidDto: SignUpDto = {
+          firstName: 'Test',
+          lastName: 'User',
+          email: 'test@email.com',
+          phone: '123456789',
+          password: 'NoSpecialChar123',
+        };
+        await expect(service.signUp(invalidDto)).rejects.toThrow(BadRequestException);
+        await expect(service.signUp(invalidDto)).rejects.toThrowError('A senha deve conter pelo menos um caractere especial.');
+        expect(userRepository.findOneBy).not.toHaveBeenCalled();
+      });
     });
-  
-    it('should reject passwords without special characters', async () => {
-      const invalidDto = { ...baseUser, password: 'NoSpecialChar123' };
-      await expect(service.signUp(invalidDto)).rejects.toThrowError(
-        'A senha deve conter pelo menos um caractere especial.',
-      );
-      expect(userRepository.findOneBy).not.toHaveBeenCalled();
-    });
-    
-  });
 
   describe('signIn', () => {
     it('should throw an UnauthorizedException for invalid credentials', async () => {
@@ -318,12 +314,12 @@ describe('AuthService', () => {
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       // Mock das novas funções
       const generateAccessTokenSpy = jest.spyOn(service, 'generateAccessToken').mockResolvedValue('access-token');
-      const generateRefreshTokenSpy = jest.spyOn(service, 'generateRefreshToken').mockResolvedValue('refresh-token');
+      const generateRefreshTokenSpy = jest.spyOn(service, 'generateRefreshToken').mockResolvedValue('refresh-token'); // Corrigido o retorno para 'refresh-token'
 
       const result = await service.signIn(signInDto);
 
       expect(result.accessToken).toBe('access-token');
-      expect(result.refreshToken).toBe('refresh-token');
+      expect(result.refreshToken).toBe('refresh-token'); 
       expect(generateAccessTokenSpy).toHaveBeenCalledWith(
         { sub: user.id, email: user.email, role: user.role },
         '30m',
@@ -350,12 +346,12 @@ describe('AuthService', () => {
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       // Mock das novas funções
       const generateAccessTokenSpy = jest.spyOn(service, 'generateAccessToken').mockResolvedValue('access-token');
-      const generateRefreshTokenSpy = jest.spyOn(service, 'generateRefreshToken').mockResolvedValue('refresh-token');
+      const generateRefreshTokenSpy = jest.spyOn(service, 'generateRefreshToken').mockResolvedValue('refresh-token'); // Corrigido o retorno para 'refresh-token'
 
       const result = await service.signIn(signInDto);
 
       expect(result.accessToken).toBe('access-token');
-      expect(result.refreshToken).toBe('refresh-token');
+      expect(result.refreshToken).toBe('refresh-token'); 
       expect(generateAccessTokenSpy).toHaveBeenCalledWith(
         { sub: user.id, email: user.email, role: user.role },
         '7d',
