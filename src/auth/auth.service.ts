@@ -10,9 +10,7 @@ import { SignUpDto } from './dtos/signUp.dto';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 
-/**
- * Exceção personalizada para erros de validação de senha.
- */
+
 export class InvalidPasswordException extends BadRequestException {
   constructor(message: string) {
     super(message);
@@ -28,26 +26,23 @@ export class AuthService {
     private configService: ConfigService
   ) {}
 
-  private validatePasswordStrength(password: string): void {
-    const minLength = this.configService.get<number>('PASSWORD_MIN_LENGTH', 8);
-    const requireUppercase = this.configService.get<boolean>('PASSWORD_REQUIRE_UPPERCASE', true);
-    const requireNumber = this.configService.get<boolean>('PASSWORD_REQUIRE_NUMBER', true);
-    const requireSpecialChar = this.configService.get<boolean>('PASSWORD_REQUIRE_SPECIAL_CHAR', true);
+  private validatePassword(password: string): void {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
     if (password.length < minLength) {
-      throw new InvalidPasswordException(`A senha deve ter no mínimo ${minLength} caracteres.`);
+      throw new BadRequestException('A senha deve ter pelo menos 8 caracteres.');
     }
-
-    if (requireUppercase && !password.match(/[A-Z]/)) {
-      throw new InvalidPasswordException("A senha deve conter pelo menos uma letra maiúscula.");
+    if (!hasUpperCase) {
+      throw new BadRequestException('A senha deve conter pelo menos uma letra maiúscula.');
     }
-
-    if (requireNumber && !password.match(/[0-9]/)) {
-      throw new InvalidPasswordException("A senha deve conter pelo menos um número.");
+    if (!hasNumber) {
+      throw new BadRequestException('A senha deve conter pelo menos um número.');
     }
-
-    if (requireSpecialChar && !password.match(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/)) {
-      throw new InvalidPasswordException("A senha deve conter pelo menos um caractere especial.");
+    if (!hasSpecialChar) {
+      throw new BadRequestException('A senha deve conter pelo menos um caractere especial.');
     }
   }
 
@@ -73,7 +68,7 @@ export class AuthService {
 
   async signUp(dto: SignUpDto): Promise<SignInResponseDto> {
     // Validação da senha ANTES da criação do usuário
-    this.validatePasswordStrength(dto.password);
+    this.validatePassword(dto.password);
 
     const userExists = await this.usersRepository.findOneBy({
       email: dto.email,
@@ -86,7 +81,7 @@ export class AuthService {
       password: await bcrypt.hash(dto.password, await bcrypt.genSalt(10)),
     });
     await this.usersRepository.save(user);
-    // Força keepLoggedIn como false para novos usuários
+    
     return this.signIn({
       email: dto.email,
       password: dto.password,
@@ -137,7 +132,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Usuário não encontrado.');
 
     // Validação da senha ANTES de atualizar
-    this.validatePasswordStrength(password);
+    this.validatePassword(password);
 
     user.password = await bcrypt.hash(password, await bcrypt.genSalt(10));
     await this.usersRepository.save(user);
