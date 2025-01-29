@@ -177,7 +177,6 @@ describe('AuthService', () => {
       );
       expect(userRepository.findOneBy).not.toHaveBeenCalled();
     });
-    
   });
 
   describe('signIn', () => {
@@ -317,8 +316,12 @@ describe('AuthService', () => {
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       // Mock das novas funções
-      const generateAccessTokenSpy = jest.spyOn(service, 'generateAccessToken').mockResolvedValue('access-token');
-      const generateRefreshTokenSpy = jest.spyOn(service, 'generateRefreshToken').mockResolvedValue('refresh-token');
+      const generateAccessTokenSpy = jest
+        .spyOn(service, 'generateAccessToken')
+        .mockResolvedValue('access-token');
+      const generateRefreshTokenSpy = jest
+        .spyOn(service, 'generateRefreshToken')
+        .mockResolvedValue('refresh-token');
 
       const result = await service.signIn(signInDto);
 
@@ -328,9 +331,11 @@ describe('AuthService', () => {
         { sub: user.id, email: user.email, role: user.role },
         '30m',
       );
-      expect(generateRefreshTokenSpy).toHaveBeenCalledWith(
-        { sub: user.id, email: user.email, role: user.role },
-      );
+      expect(generateRefreshTokenSpy).toHaveBeenCalledWith({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      });
     });
 
     it('should return a token with 7d expiration when keepLoggedIn is true', async () => {
@@ -349,8 +354,12 @@ describe('AuthService', () => {
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       // Mock das novas funções
-      const generateAccessTokenSpy = jest.spyOn(service, 'generateAccessToken').mockResolvedValue('access-token');
-      const generateRefreshTokenSpy = jest.spyOn(service, 'generateRefreshToken').mockResolvedValue('refresh-token');
+      const generateAccessTokenSpy = jest
+        .spyOn(service, 'generateAccessToken')
+        .mockResolvedValue('access-token');
+      const generateRefreshTokenSpy = jest
+        .spyOn(service, 'generateRefreshToken')
+        .mockResolvedValue('refresh-token');
 
       const result = await service.signIn(signInDto);
 
@@ -360,9 +369,11 @@ describe('AuthService', () => {
         { sub: user.id, email: user.email, role: user.role },
         '7d',
       );
-      expect(generateRefreshTokenSpy).toHaveBeenCalledWith(
-        { sub: user.id, email: user.email, role: user.role },
-      );
+      expect(generateRefreshTokenSpy).toHaveBeenCalledWith({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      });
     });
   });
 });
