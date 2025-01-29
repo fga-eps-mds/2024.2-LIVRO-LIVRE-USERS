@@ -9,6 +9,7 @@ import * as bcrypt from 'bcryptjs';
 import { repositoryMockFactory } from '../../test/database/utils';
 import { UnauthorizedException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { SignInDto } from './dtos/signIn.dto';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -59,7 +60,7 @@ describe('AuthService', () => {
         lastName: 'User',
         email: 'test@email.com',
         phone: '123456789',
-        password: 'password',
+        password: 'Password123!',
       };
 
       const user = new User();
@@ -176,6 +177,7 @@ describe('AuthService', () => {
       );
       expect(userRepository.findOneBy).not.toHaveBeenCalled();
     });
+    
   });
 
   describe('signIn', () => {
@@ -295,6 +297,72 @@ describe('AuthService', () => {
         { expiresIn: '30m' },
       );
       expect(sendMailMock).toHaveBeenCalled();
+    });
+  });
+
+  describe('signIn with keepLoggedIn', () => {
+    it('should return a token with 30m expiration when keepLoggedIn is false', async () => {
+      const signInDto: SignInDto = {
+        email: 'test@example.com',
+        password: 'password',
+        role: UserRoles.User,
+        keepLoggedIn: false,
+      };
+      const user = new User();
+      user.id = 'user-id';
+      user.email = signInDto.email;
+      user.password = 'hashed-password';
+      user.role = UserRoles.User;
+
+      jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(user);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+      // Mock das novas funções
+      const generateAccessTokenSpy = jest.spyOn(service, 'generateAccessToken').mockResolvedValue('access-token');
+      const generateRefreshTokenSpy = jest.spyOn(service, 'generateRefreshToken').mockResolvedValue('refresh-token');
+
+      const result = await service.signIn(signInDto);
+
+      expect(result.accessToken).toBe('access-token');
+      expect(result.refreshToken).toBe('refresh-token');
+      expect(generateAccessTokenSpy).toHaveBeenCalledWith(
+        { sub: user.id, email: user.email, role: user.role },
+        '30m',
+      );
+      expect(generateRefreshTokenSpy).toHaveBeenCalledWith(
+        { sub: user.id, email: user.email, role: user.role },
+      );
+    });
+
+    it('should return a token with 7d expiration when keepLoggedIn is true', async () => {
+      const signInDto: SignInDto = {
+        email: 'test@example.com',
+        password: 'password',
+        role: UserRoles.User,
+        keepLoggedIn: true,
+      };
+      const user = new User();
+      user.id = 'user-id';
+      user.email = signInDto.email;
+      user.password = 'hashed-password';
+      user.role = UserRoles.User;
+
+      jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(user);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+      // Mock das novas funções
+      const generateAccessTokenSpy = jest.spyOn(service, 'generateAccessToken').mockResolvedValue('access-token');
+      const generateRefreshTokenSpy = jest.spyOn(service, 'generateRefreshToken').mockResolvedValue('refresh-token');
+
+      const result = await service.signIn(signInDto);
+
+      expect(result.accessToken).toBe('access-token');
+      expect(result.refreshToken).toBe('refresh-token');
+      expect(generateAccessTokenSpy).toHaveBeenCalledWith(
+        { sub: user.id, email: user.email, role: user.role },
+        '7d',
+      );
+      expect(generateRefreshTokenSpy).toHaveBeenCalledWith(
+        { sub: user.id, email: user.email, role: user.role },
+      );
     });
   });
 });
