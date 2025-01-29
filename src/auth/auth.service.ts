@@ -86,6 +86,13 @@ export class AuthService {
       role: user.role,
     });
   }
+  async generateAccessToken(payload: any, expiresIn: string): Promise<string> {
+    return this.jwtService.signAsync(payload, { expiresIn });
+  }
+
+  async generateRefreshToken(payload: any): Promise<string> {
+    return this.jwtService.signAsync(payload);
+  }
 
   async getProfile(data: { sub: string; email: string }): Promise<User> {
     const user = await this.usersRepository.findOneBy({ id: data.sub });
