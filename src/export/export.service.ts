@@ -16,17 +16,23 @@ export class ExportService {
 
       if (!userIds || userIds.length === 0) {
         console.log('Nenhum usuário encontrado.');
-        throw new Error('Nenhum usuário encontrado para exportação. Verifique os IDs fornecidos.');
+        throw new Error(
+          'Nenhum usuário encontrado para exportação. Verifique os IDs fornecidos.',
+        );
       }
 
-      const users = userIds.length ? await this.userService.findByIds(userIds) : [];
+      const users = userIds.length
+        ? await this.userService.findByIds(userIds)
+        : [];
 
       const foundIds = users.map((user) => user.id);
       const missingIds = userIds.filter((id) => !foundIds.includes(id));
 
       if (missingIds.length) {
         console.log(`IDs não encontrados: ${missingIds}`);
-        throw new Error(`Os seguintes IDs não foram encontrados no banco de dados: ${missingIds.join(', ')}`);
+        throw new Error(
+          `Os seguintes IDs não foram encontrados no banco de dados: ${missingIds.join(', ')}`,
+        );
       }
 
       const data = users.map((user) => ({
