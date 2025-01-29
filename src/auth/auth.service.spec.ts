@@ -51,7 +51,7 @@ describe('AuthService', () => {
       sendMail: sendMailMock,
     } as any);
   });
-
+//signUp
   describe('signUp', () => {
     it('should create a new user and return a signed token', async () => {
       const signUpDto: SignUpDto = {
