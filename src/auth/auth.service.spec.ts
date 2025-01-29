@@ -51,7 +51,7 @@ describe('AuthService', () => {
       sendMail: sendMailMock,
     } as any);
   });
-//signUp
+  //signUp
   describe('signUp', () => {
     it('should create a new user and return a signed token', async () => {
       const signUpDto: SignUpDto = {
@@ -135,16 +135,16 @@ describe('AuthService', () => {
       phone: '123456789',
       password: validPassword,
     };
-  
+
     it('should accept a valid password', async () => {
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(null);
       jest.spyOn(userRepository, 'create').mockReturnValue(new User());
       jest.spyOn(userRepository, 'save').mockResolvedValue(new User());
-  
+
       await expect(service.signUp(baseUser)).resolves.toBeDefined();
       expect(userRepository.findOneBy).toHaveBeenCalled();
     });
-  
+
     it('should reject passwords shorter than 8 characters', async () => {
       const invalidDto = { ...baseUser, password: 'Short1!' };
       await expect(service.signUp(invalidDto)).rejects.toThrowError(
@@ -152,7 +152,7 @@ describe('AuthService', () => {
       );
       expect(userRepository.findOneBy).not.toHaveBeenCalled();
     });
-  
+
     it('should reject passwords without uppercase letters', async () => {
       const invalidDto = { ...baseUser, password: 'nopassword123!' };
       await expect(service.signUp(invalidDto)).rejects.toThrowError(
@@ -160,7 +160,7 @@ describe('AuthService', () => {
       );
       expect(userRepository.findOneBy).not.toHaveBeenCalled();
     });
-  
+
     it('should reject passwords without numbers', async () => {
       const invalidDto = { ...baseUser, password: 'NoNumberPassword!' };
       await expect(service.signUp(invalidDto)).rejects.toThrowError(
@@ -168,7 +168,7 @@ describe('AuthService', () => {
       );
       expect(userRepository.findOneBy).not.toHaveBeenCalled();
     });
-  
+
     it('should reject passwords without special characters', async () => {
       const invalidDto = { ...baseUser, password: 'NoSpecialChar123' };
       await expect(service.signUp(invalidDto)).rejects.toThrowError(
