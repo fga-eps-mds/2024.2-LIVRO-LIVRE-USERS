@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRoles } from '../database/entities/user.entity';
@@ -9,7 +13,6 @@ import { SignInResponseDto } from './dtos/signInResponse.dto';
 import { SignUpDto } from './dtos/signUp.dto';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
-
 
 export class InvalidPasswordException extends BadRequestException {
   constructor(message: string) {
@@ -23,7 +26,7 @@ export class AuthService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private jwtService: JwtService,
-    private configService: ConfigService
+    private configService: ConfigService,
   ) {}
 
   private validatePassword(password: string): void {
@@ -33,16 +36,24 @@ export class AuthService {
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
     if (password.length < minLength) {
-      throw new BadRequestException('A senha deve ter pelo menos 8 caracteres.');
+      throw new BadRequestException(
+        'A senha deve ter pelo menos 8 caracteres.',
+      );
     }
     if (!hasUpperCase) {
-      throw new BadRequestException('A senha deve conter pelo menos uma letra maiúscula.');
+      throw new BadRequestException(
+        'A senha deve conter pelo menos uma letra maiúscula.',
+      );
     }
     if (!hasNumber) {
-      throw new BadRequestException('A senha deve conter pelo menos um número.');
+      throw new BadRequestException(
+        'A senha deve conter pelo menos um número.',
+      );
     }
     if (!hasSpecialChar) {
-      throw new BadRequestException('A senha deve conter pelo menos um caractere especial.');
+      throw new BadRequestException(
+        'A senha deve conter pelo menos um caractere especial.',
+      );
     }
   }
 
@@ -61,7 +72,9 @@ export class AuthService {
     const accessTokenExpiresIn = keepLoggedIn ? '7d' : '30m';
 
     return {
-      accessToken: await this.jwtService.signAsync(payload, { expiresIn: accessTokenExpiresIn }),
+      accessToken: await this.jwtService.signAsync(payload, {
+        expiresIn: accessTokenExpiresIn,
+      }),
       refreshToken: await this.jwtService.signAsync(payload), // Considere adicionar uma expiração ao refreshToken também
     };
   }
@@ -81,12 +94,12 @@ export class AuthService {
       password: await bcrypt.hash(dto.password, await bcrypt.genSalt(10)),
     });
     await this.usersRepository.save(user);
-    
+
     return this.signIn({
       email: dto.email,
       password: dto.password,
       role: user.role,
-      keepLoggedIn: false
+      keepLoggedIn: false,
     });
   }
 

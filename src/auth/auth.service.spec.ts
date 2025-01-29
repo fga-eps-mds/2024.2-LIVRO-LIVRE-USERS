@@ -209,22 +209,22 @@ describe('AuthService', () => {
       user.email = signInDto.email;
       user.password = 'hashed-password';
       user.role = UserRoles.User;
-  
+
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       const signAsyncSpy = jest.spyOn(jwtService, 'signAsync');
-  
+
       const result = await service.signIn(signInDto);
-  
+
       expect(result.accessToken).toBeDefined();
-      
+
       expect(signAsyncSpy).toHaveBeenNthCalledWith(
         1,
         { sub: user.id, email: user.email, role: user.role },
         { expiresIn: '30m' },
       );
     });
-  
+
     it('should return a token with 7d expiration when keepLoggedIn is true', async () => {
       const signInDto: SignInDto = {
         email: 'test@example.com',
@@ -237,15 +237,15 @@ describe('AuthService', () => {
       user.email = signInDto.email;
       user.password = 'hashed-password';
       user.role = UserRoles.User;
-  
+
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       const signAsyncSpy = jest.spyOn(jwtService, 'signAsync');
-  
+
       const result = await service.signIn(signInDto);
-  
+
       expect(result.accessToken).toBeDefined();
-      
+
       expect(signAsyncSpy).toHaveBeenNthCalledWith(
         1,
         { sub: user.id, email: user.email, role: user.role },

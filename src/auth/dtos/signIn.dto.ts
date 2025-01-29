@@ -12,5 +12,5 @@ export class SignInDto {
   @IsNotEmpty()
   role: UserRoles;
 
-  keepLoggedIn?: boolean; 
+  keepLoggedIn?: boolean;
 }
