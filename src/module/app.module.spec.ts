@@ -59,5 +59,4 @@ describe('AppModule', () => {
     const typeormConfig = configService.get('typeorm');
     expect(typeormConfig).toBeDefined();
   });
-
 });

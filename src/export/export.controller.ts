@@ -4,7 +4,7 @@ import { Response } from 'express';
 
 @Controller('export')
 export class ExportController {
-  constructor(private readonly exportService: ExportService) { }
+  constructor(private readonly exportService: ExportService) {}
 
   @Get()
   async exportToCsv(
