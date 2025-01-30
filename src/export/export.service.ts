@@ -24,39 +24,18 @@ export class ExportService {
     try {
       const { userIds, bookIds } = options;
 
-<<<<<<< HEAD
       if ((!userIds || userIds.length === 0) && (!bookIds || bookIds.length === 0)) {
         throw new Error('Nenhum usuário ou livro encontrado para exportação. Verifique os IDs fornecidos.');
       }
 
       const users = userIds && userIds.length ? await this.userService.findByIds(userIds) : [];
       const books = bookIds && bookIds.length ? await this.booksService.findBooksByIds(bookIds) : [];
-=======
-      if (!userIds || userIds.length === 0) {
-        console.log('Nenhum usuário encontrado.');
-        throw new Error(
-          'Nenhum usuário encontrado para exportação. Verifique os IDs fornecidos.',
-        );
-      }
-
-      const users = userIds.length
-        ? await this.userService.findByIds(userIds)
-        : [];
->>>>>>> d1fa6772f809bdcda8f1e9b91403a55fce476077
 
       const foundUserIds = users.map((user) => user.id);
       const missingUserIds = userIds ? userIds.filter((id) => !foundUserIds.includes(id)) : [];
 
-<<<<<<< HEAD
       if (missingUserIds.length) {
         throw new Error(`Os seguintes IDs de usuários não foram encontrados no banco de dados: ${missingUserIds.join(', ')}`);
-=======
-      if (missingIds.length) {
-        console.log(`IDs não encontrados: ${missingIds}`);
-        throw new Error(
-          `Os seguintes IDs não foram encontrados no banco de dados: ${missingIds.join(', ')}`,
-        );
->>>>>>> d1fa6772f809bdcda8f1e9b91403a55fce476077
       }
 
       const foundBookIds = books.map((book) => book.id);
