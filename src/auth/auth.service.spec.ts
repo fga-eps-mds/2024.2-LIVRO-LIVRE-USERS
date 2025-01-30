@@ -319,7 +319,7 @@ describe('AuthService', () => {
       const generateRefreshTokenSpy = jest.spyOn(service, 'generateRefreshToken').mockResolvedValue('refresh-token'); // Corrigido o retorno para 'refresh-token'
 
       const result = await service.signIn(signInDto);
-
+      
       expect(result.accessToken).toBe('access-token');
       expect(result.refreshToken).toBe('refresh-token'); 
       expect(generateAccessTokenSpy).toHaveBeenCalledWith(
