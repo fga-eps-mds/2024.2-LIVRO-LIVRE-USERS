@@ -52,7 +52,7 @@ describe('AuthService', () => {
       sendMail: sendMailMock,
     } as any);
   });
-
+  //signUp
   describe('signUp', () => {
     it('should create a new user and return a signed token', async () => {
       const signUpDto: SignUpDto = {
@@ -136,6 +136,7 @@ describe('AuthService', () => {
       expect(userRepository.findOneBy).not.toHaveBeenCalled();
     });
 
+
     it('should reject passwords without uppercase letters', async () => {
       const invalidDto: SignUpDto = {
         firstName: 'Test',
@@ -148,6 +149,7 @@ describe('AuthService', () => {
       await expect(service.signUp(invalidDto)).rejects.toThrowError('A senha deve conter pelo menos uma letra maiúscula.');
       expect(userRepository.findOneBy).not.toHaveBeenCalled();
     });
+
 
     it('should reject passwords without numbers', async () => {
         const invalidDto: SignUpDto = {
@@ -324,9 +326,11 @@ describe('AuthService', () => {
         { sub: user.id, email: user.email, role: user.role },
         '30m',
       );
-      expect(generateRefreshTokenSpy).toHaveBeenCalledWith(
-        { sub: user.id, email: user.email, role: user.role },
-      );
+      expect(generateRefreshTokenSpy).toHaveBeenCalledWith({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      });
     });
 
     it('should return a token with 7d expiration when keepLoggedIn is true', async () => {
@@ -356,9 +360,11 @@ describe('AuthService', () => {
         { sub: user.id, email: user.email, role: user.role },
         '7d',
       );
-      expect(generateRefreshTokenSpy).toHaveBeenCalledWith(
-        { sub: user.id, email: user.email, role: user.role },
-      );
+      expect(generateRefreshTokenSpy).toHaveBeenCalledWith({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      });
     });
   });
 });
