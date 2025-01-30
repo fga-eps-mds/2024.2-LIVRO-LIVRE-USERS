@@ -9,19 +9,21 @@ export class ExportController {
   @Get()
   async exportToCsv(
     @Query('userIds') userIds: string | undefined,
+    @Query('bookIds') bookIds: string | undefined,
     @Res() res: Response,
   ) {
     try {
-      if (!userIds) {
-        console.log('Nenhum userId foi fornecido na query.');
+      if (!userIds && !bookIds) {
+        console.log('Nenhum userId ou bookIds foi fornecido na query.');
         return res.status(400).json({
-          message: 'Parâmetro "userIds" é obrigatório.',
+          message: 'Parâmetro "userIds" ou "bookIds" é obrigatório.',
         });
       }
 
-      const userIdsArray = userIds.split(',').map((id) => id.trim());
+      const userIdsArray = userIds ? userIds.split(',').map(id => id.trim()) : [];
+      const bookIdsArray = bookIds ? bookIds.split(',').map(id => id.trim()) : [];
 
-      const options: ExportOptions = { userIds: userIdsArray };
+      const options: ExportOptions = { userIds: userIdsArray, bookIds: bookIdsArray };
 
       const csv = await this.exportService.generateCsv(options);
 
