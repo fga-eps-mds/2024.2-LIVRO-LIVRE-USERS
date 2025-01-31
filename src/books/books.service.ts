@@ -1,70 +1,36 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { BorrowBooksDto } from './dtos/borrowBooks.dto';
 import { SearchBooksDto } from './dtos/searchBooks.dto';
-import { Book } from 'src/database/entities/book.entity';
+import { UpdateBookStatusDto } from './dtos/updateBookStatus.dto';
+import { booksMock } from './books.mock'; // 🔥 Importando o mock
 
 @Injectable()
 export class BooksService {
-    constructor(
-        @InjectRepository(Book)
-        private booksRepository: Repository<Book>,
-    ) { }
+  private books = booksMock; // Usando o mock
 
-    async searchBooks(searchParams: SearchBooksDto) {
-        let { title, author, theme, page, limit } = searchParams;
+  async searchBooks(searchParams: SearchBooksDto) {
+    return this.books.filter(book => 
+      (searchParams.title ? book.title.includes(searchParams.title) : true) &&
+      (searchParams.author ? book.author.includes(searchParams.author) : true)
+    );
+  }
 
-        page = parseInt(page as any, 10) || 1;  
-        limit = parseInt(limit as any, 10) || 10;  
-        const offset = (page - 1) * limit;
+  async getBookById(id: string): Promise<BorrowBooksDto> {
+    const book = this.books.find(book => book.id === Number(id));
+    if (!book) {
+      throw new NotFoundException("Livro não encontrado");
+    }
+    return book;
+  }
 
-        const filters: any = {};
-        if (title) filters.title = title;
-        if (author) filters.author = author;
-        if (theme) filters.theme = theme;
+  async updateBookStatus(id: string, updateBookStatusDto: UpdateBookStatusDto): Promise<BorrowBooksDto> {
+    const bookIndex = this.books.findIndex((book) => book.id === Number(id));
 
-        try {
-            const [books, totalBooks] = await this.booksRepository.findAndCount({
-                where: filters,
-                skip: offset,
-                take: limit,
-                order:{
-                    averageRating : 'DESC',
-                    title: 'ASC',
-                }
-            });
-
-            const totalPages = Math.ceil(totalBooks / limit);
-
-            if (books.length === 0) {
-                return {
-                    message: 'Nenhum livro encontrado para a pesquisa realizada. Tente outros termos.',
-                    totalPages: 0,
-                    currentPage: page,
-                    results: [],
-                };
-            }
-
-            return {
-                message: 'Livros encontrados com sucesso!',
-                totalPages,
-                currentPage: page,
-                results: books,
-            };
-        } catch (error) {
-            console.error(error);
-            throw new Error('Erro ao realizar a busca no banco de dados');
-        }
+    if (bookIndex === -1) {
+      throw new NotFoundException('Livro não encontrado');
     }
 
-    async getBookById(id: string): Promise<Book> {
-        const book = await this.booksRepository.findOneBy({ id })
-        if (!book) {
-            throw new NotFoundException(`O livro de ID ${id} não foi encontrado.`);
-        }   
-        return book;
-
-    
-    }
+    this.books[bookIndex].status = updateBookStatusDto.status;
+    return this.books[bookIndex];
+  }
 }
-
