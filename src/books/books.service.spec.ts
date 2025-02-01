@@ -20,21 +20,25 @@ describe('BooksService', () => {
   });
 
   it('deve lançar erro ao buscar um livro por ID inexistente', async () => {
-    await expect(booksService.getBookById('999')).rejects.toThrow(NotFoundException);
+    await expect(booksService.getBookById('999')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('deve atualizar o status de um livro existente', async () => {
     const updatedBook = await booksService.updateBookStatus('1', {
-        status: 'NotAvailable',
-        userId: ''
+      status: 'NotAvailable',
+      userId: '',
     });
     expect(updatedBook.status).toBe('NotAvailable');
   });
 
   it('deve lançar erro ao tentar atualizar o status de um livro inexistente', async () => {
-    await expect(booksService.updateBookStatus('999', {
+    await expect(
+      booksService.updateBookStatus('999', {
         status: 'NotAvailable',
-        userId: ''
-    })).rejects.toThrow(NotFoundException);
+        userId: '',
+      }),
+    ).rejects.toThrow(NotFoundException);
   });
 });

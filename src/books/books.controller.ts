@@ -18,15 +18,14 @@ export class BooksController {
     try {
       return await this.booksService.getBookById(id);
     } catch (error) {
-      throw error; 
+      throw error;
     }
   }
 
-  
   @Put(':id/status')
   async updateBookStatus(
     @Param('id') id: string,
-    @Body() updateBookStatusDto: UpdateBookStatusDto
+    @Body() updateBookStatusDto: UpdateBookStatusDto,
   ) {
     return this.booksService.updateBookStatus(id, updateBookStatusDto);
   }

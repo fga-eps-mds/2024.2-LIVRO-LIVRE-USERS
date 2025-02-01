@@ -1,7 +1,5 @@
-import { IsString, IsOptional, IsNumber, IsNotEmpty } from 'class-validator';
-
 export class BorrowBooksDto {
-  id: number; 
+  id: number;
   title: string;
   author: string;
   rating: number;
@@ -9,4 +7,3 @@ export class BorrowBooksDto {
   coverImage: string;
   status: string;
 }
-

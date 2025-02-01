@@ -2,28 +2,34 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { BorrowBooksDto } from './dtos/borrowBooks.dto';
 import { SearchBooksDto } from './dtos/searchBooks.dto';
 import { UpdateBookStatusDto } from './dtos/updateBookStatus.dto';
-import { booksMock } from './books.mock'; 
+import { booksMock } from './books.mock';
 
 @Injectable()
 export class BooksService {
-  private books = booksMock; 
+  private books = booksMock;
 
   async searchBooks(searchParams: SearchBooksDto) {
-    return this.books.filter(book => 
-      (searchParams.title ? book.title.includes(searchParams.title) : true) &&
-      (searchParams.author ? book.author.includes(searchParams.author) : true)
+    return this.books.filter(
+      (book) =>
+        (searchParams.title ? book.title.includes(searchParams.title) : true) &&
+        (searchParams.author
+          ? book.author.includes(searchParams.author)
+          : true),
     );
   }
 
   async getBookById(id: string): Promise<BorrowBooksDto> {
-    const book = this.books.find(book => book.id === Number(id));
+    const book = this.books.find((book) => book.id === Number(id));
     if (!book) {
-      throw new NotFoundException("Livro não encontrado");
+      throw new NotFoundException('Livro não encontrado');
     }
     return book;
   }
 
-  async updateBookStatus(id: string, updateBookStatusDto: UpdateBookStatusDto): Promise<BorrowBooksDto> {
+  async updateBookStatus(
+    id: string,
+    updateBookStatusDto: UpdateBookStatusDto,
+  ): Promise<BorrowBooksDto> {
     const bookIndex = this.books.findIndex((book) => book.id === Number(id));
 
     if (bookIndex === -1) {
