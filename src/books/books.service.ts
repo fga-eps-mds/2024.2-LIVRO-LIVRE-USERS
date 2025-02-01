@@ -2,11 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { BorrowBooksDto } from './dtos/borrowBooks.dto';
 import { SearchBooksDto } from './dtos/searchBooks.dto';
 import { UpdateBookStatusDto } from './dtos/updateBookStatus.dto';
-import { booksMock } from './books.mock'; // 🔥 Importando o mock
+import { booksMock } from './books.mock'; 
 
 @Injectable()
 export class BooksService {
-  private books = booksMock; // Usando o mock
+  private books = booksMock; 
 
   async searchBooks(searchParams: SearchBooksDto) {
     return this.books.filter(book => 

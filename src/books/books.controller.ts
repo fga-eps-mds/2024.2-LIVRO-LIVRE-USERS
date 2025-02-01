@@ -24,7 +24,10 @@ export class BooksController {
 
   
   @Put(':id/status')
-  async updateBookStatus(@Param('id') id: string, @Body() updateBookStatusDto: UpdateBookStatusDto) {
+  async updateBookStatus(
+    @Param('id') id: string,
+    @Body() updateBookStatusDto: UpdateBookStatusDto
+  ) {
     return this.booksService.updateBookStatus(id, updateBookStatusDto);
   }
 }

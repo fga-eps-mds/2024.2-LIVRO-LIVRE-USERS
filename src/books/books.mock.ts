@@ -6,7 +6,8 @@ export const booksMock = [
     rating: 4.5,
     description: "Descrição do livro",
     coverImage: "/logo.png",
-    status: "Available"
+    status: "Available",
+    userId: null
   },
   {
     id: 2,
@@ -15,6 +16,7 @@ export const booksMock = [
     rating: 2.5,
     description: "Descrição do livro",
     coverImage: "/logo.png",
-    status: "Available"
+    status: "Available",
+    userId: null
   }
 ];
