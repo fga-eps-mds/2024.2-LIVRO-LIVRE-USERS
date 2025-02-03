@@ -13,6 +13,7 @@ import { SignInResponseDto } from './dtos/signInResponse.dto';
 import { SignUpDto } from './dtos/signUp.dto';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
+import { ChangePasswordDto } from './dtos/changePassword.dto';
 
 export class InvalidPasswordException extends BadRequestException {
   constructor(message: string) {
@@ -138,17 +139,31 @@ export class AuthService {
   }
 
   async changePassword(
-    id: string,
-    password: string,
+    userId: string,
+    changePasswordDto: ChangePasswordDto, 
   ): Promise<{ success: boolean }> {
-    const user = await this.usersRepository.findOneBy({ id });
+    const user = await this.usersRepository.findOneBy({ id: userId });
     if (!user) throw new UnauthorizedException('Usuário não encontrado.');
 
-    // Validação da senha ANTES de atualizar
-    this.validatePassword(password);
+    
+    const passwordMatches = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password,
+    );
+    if (!passwordMatches) {
+      throw new UnauthorizedException('Senha atual incorreta.');
+    }
 
-    user.password = await bcrypt.hash(password, await bcrypt.genSalt(10));
+    
+    this.validatePassword(changePasswordDto.newPassword);
+
+    
+    user.password = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      await bcrypt.genSalt(10),
+    );
     await this.usersRepository.save(user);
     return { success: true };
   }
+  
 }
