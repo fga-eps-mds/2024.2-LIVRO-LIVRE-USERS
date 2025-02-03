@@ -3,6 +3,7 @@ version: '3'
 services:
   postgres:
     image: postgres
+    container_name: livro-livre-db
     ports:
       - 5432:5432
     environment:
