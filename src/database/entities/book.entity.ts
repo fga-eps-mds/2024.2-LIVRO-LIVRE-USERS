@@ -1,15 +1,8 @@
-import { HttpStatus } from '@nestjs/common';
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum Status {
-  AVAILABLE = "available",
-  NOTAVAILABLE = "notAvailable",
+  AVAILABLE = 'available',
+  NOTAVAILABLE = 'notAvailable',
 }
 
 @Entity()
@@ -42,7 +35,7 @@ export class Book {
   borrowedBy: string;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: Status,
     default: Status.AVAILABLE,
   })
