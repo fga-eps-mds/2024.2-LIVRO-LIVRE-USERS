@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from '../database/entities/user.entity';
+import { User, UserRoles } from '../database/entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { SignInDto } from './dtos/signIn.dto';
@@ -17,13 +17,17 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async signIn({ email, password }: SignInDto): Promise<SignInResponseDto> {
-    const user = await this.usersRepository.findOneBy({ email });
+  async signIn({
+    email,
+    password,
+    role,
+  }: SignInDto): Promise<SignInResponseDto> {
+    const user = await this.usersRepository.findOneBy({ email, role });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('E-mail ou senha inválidos.');
     }
 
-    const payload = { sub: user.id, email: user.email };
+    const payload = { sub: user.id, email: user.email, role: user.role };
     return {
       accessToken: await this.jwtService.signAsync(payload),
       refreshToken: await this.jwtService.signAsync(payload),
@@ -37,10 +41,15 @@ export class AuthService {
     if (userExists) throw new UnauthorizedException('Usuário já cadastrado.');
     const user = this.usersRepository.create({
       ...dto,
+      role: UserRoles.User,
       password: await bcrypt.hash(dto.password, await bcrypt.genSalt(10)),
     });
     await this.usersRepository.save(user);
-    return this.signIn({ email: dto.email, password: dto.password });
+    return this.signIn({
+      email: dto.email,
+      password: dto.password,
+      role: user.role,
+    });
   }
 
   async getProfile(data: { sub: string; email: string }): Promise<User> {
@@ -69,7 +78,7 @@ export class AuthService {
 
     await transporter.sendMail({
       from: `Livro Livre <${process.env.MAIL_USERNAME}>`,
-      to: 'matheusafonsouza@gmail.com',
+      to: email,
       subject: 'Recuperação de senha - Livro Livre',
       text: message,
     });
