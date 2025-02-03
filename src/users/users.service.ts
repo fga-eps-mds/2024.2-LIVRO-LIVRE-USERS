@@ -14,11 +14,9 @@ import { ListUsersQueryDto } from './dtos/listUserQuery.dto';
 
 export interface LoanRecord {
   id: string;
-  userId: string;
-  bookId: string;
+  book: Book; // Interface Book
   borrowedAt: Date;
   returnedAt: Date | null;
-  book: Book;
 }
 
 @Injectable()
@@ -97,19 +95,32 @@ export class UsersService {
       throw new NotFoundException('No loan records found for this user.');
     }
 
-    return loanRecords.map((record) => ({
-      id: record.id,
-      userId: record.userId,
-      bookId: record.bookId,
-      borrowedAt: record.borrowedAt,
-      returnedAt: record.returnedAt,
-      book: mockBooks.find((book) => book.id === record.bookId) || {
-        id: record.bookId,
-        title: 'Unknown Book',
-        author: 'Unknown Author',
-        isbn: 'N/A',
-        publishedYear: 0,
-      },
-    }));
+    return loanRecords.map((record) => {
+      const book = mockBooks.find((b) => b.id === record.bookId);
+      if (!book) {
+        // Livro não encontrado no mock
+        console.warn(
+          `Livro não encontrado no mock para o ID: ${record.bookId}`,
+        );
+        return {
+          id: record.id,
+          book: {
+            id: record.bookId,
+            title: 'Unknown Book',
+            author: 'Unknown Author',
+            isbn: 'N/A',
+            publishedYear: 0,
+          },
+          borrowedAt: record.borrowedAt,
+          returnedAt: record.returnedAt,
+        };
+      }
+      return {
+        id: record.id,
+        book: book,
+        borrowedAt: record.borrowedAt,
+        returnedAt: record.returnedAt,
+      };
+    });
   }
 }

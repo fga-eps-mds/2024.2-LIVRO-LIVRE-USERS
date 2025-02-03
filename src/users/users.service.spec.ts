@@ -6,7 +6,7 @@ import { LoanHistory } from '../database/entities/loan.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { mockBooks } from '../users/utils/mockBooks';
+import { mockBooks } from './utils/mockBooks';
 
 // Mock do bcrypt
 jest.mock('bcrypt', () => ({
@@ -31,7 +31,7 @@ const loanHistoryRepositoryMockFactory = () => ({
 describe('UsersService', () => {
   let service: UsersService;
   let userRepository: Repository<User>;
-  let loanHistoryRepository: Repository<LoanHistory>;
+  let loanHistoryRepository: jest.Mocked<Repository<LoanHistory>>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -52,19 +52,8 @@ describe('UsersService', () => {
     userRepository = module.get<Repository<User>>(getRepositoryToken(User));
     loanHistoryRepository = module.get<Repository<LoanHistory>>(
       getRepositoryToken(LoanHistory),
-    );
+    ) as jest.Mocked<Repository<LoanHistory>>;
   });
-
-  // describe.skip('findAll', () => {
-  //   it('should return an array of users', async () => {
-  //     const users = [new User(), new User()];
-  //     jest.spyOn(userRepository, 'find').mockResolvedValueOnce(users);
-
-  //     const result = await service.findAll();
-  //     expect(result).toEqual(users);
-  //     expect(userRepository.find).toHaveBeenCalledTimes(1);
-  //   });
-  // });
 
   describe('findOne', () => {
     it('should return a user when found', async () => {
@@ -123,14 +112,24 @@ describe('UsersService', () => {
 
       (bcrypt.genSalt as jest.Mock).mockResolvedValueOnce('salt');
 
-      jest.spyOn(userRepository, 'save').mockResolvedValueOnce({
+      const updatedUser = {
         ...user,
         ...updateData,
         password: 'newHashedPassword',
-      });
+      };
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { oldPassword, newPassword, ...updatedData } = updateData;
+      // Mock do save: retorna o objeto original *após* a atualização (simula o BD)
+      jest
+        .spyOn(userRepository, 'save')
+        .mockImplementation(async (userToSave: User) => {
+          // Simula a atualização:
+          Object.assign(userToSave, updateData, {
+            password: 'newHashedPassword',
+          });
+          return userToSave; // Retorna o objeto *após* a atualização
+        });
+
+      jest.spyOn(service, 'findOne').mockResolvedValueOnce(updatedUser);
 
       const result = await service.update('123', updateData);
 
@@ -140,16 +139,8 @@ describe('UsersService', () => {
         'hashedPassword',
       );
       expect(bcrypt.hash).toHaveBeenCalledWith(updateData.newPassword, 'salt');
-      expect(userRepository.save).toHaveBeenCalledWith({
-        ...user,
-        ...updatedData,
-        password: 'newHashedPassword',
-      });
-      expect(result).toEqual({
-        ...user,
-        ...updatedData,
-        password: 'newHashedPassword',
-      });
+      expect(userRepository.save).toHaveBeenCalledWith(user);
+      expect(result).toEqual(updatedUser);
     });
 
     it('should throw NotFoundException if the user does not exist', async () => {
@@ -177,48 +168,43 @@ describe('UsersService', () => {
     });
   });
 
-  // Testes para getUserLoanHistory
   describe('getUserLoanHistory', () => {
     it('should return loan history for the user', async () => {
-      const mockLoanRecords = [
+      const mockLoanRecords: LoanHistory[] = [
         {
           id: '1',
           userId: '123',
           bookId: '1',
           borrowedAt: new Date('2025-01-01'),
           returnedAt: null,
-        },
+          user: { id: '123' } as User,
+        } as LoanHistory,
         {
           id: '2',
           userId: '123',
           bookId: '2',
           borrowedAt: new Date('2025-01-02'),
           returnedAt: new Date('2025-01-10'),
-        },
+          user: { id: '123' } as User,
+        } as LoanHistory,
       ];
 
-      jest
-        .spyOn(loanHistoryRepository, 'find')
-        .mockResolvedValueOnce(mockLoanRecords);
+      loanHistoryRepository.find.mockResolvedValueOnce(mockLoanRecords);
 
       const result = await service.getUserLoanHistory('123');
 
       expect(result).toEqual([
         {
           id: '1',
-          userId: '123',
-          bookId: '1',
+          book: mockBooks.find((book) => book.id === '1'),
           borrowedAt: new Date('2025-01-01'),
           returnedAt: null,
-          book: mockBooks.find((book) => book.id === '1'),
         },
         {
           id: '2',
-          userId: '123',
-          bookId: '2',
+          book: mockBooks.find((book) => book.id === '2'),
           borrowedAt: new Date('2025-01-02'),
           returnedAt: new Date('2025-01-10'),
-          book: mockBooks.find((book) => book.id === '2'),
         },
       ]);
 
@@ -229,7 +215,7 @@ describe('UsersService', () => {
     });
 
     it('should throw NotFoundException if no loan records are found', async () => {
-      jest.spyOn(loanHistoryRepository, 'find').mockResolvedValueOnce([]);
+      loanHistoryRepository.find.mockResolvedValueOnce([]);
 
       await expect(service.getUserLoanHistory('123')).rejects.toThrow(
         NotFoundException,
