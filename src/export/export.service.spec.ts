@@ -6,8 +6,6 @@ import { parse } from 'json2csv';
 
 describe('ExportService', () => {
   let exportService: ExportService;
-  let usersService: UsersService;
-  let booksService: BooksService;
 
   const mockUsersService = {
     findByIds: jest.fn(),
@@ -27,8 +25,6 @@ describe('ExportService', () => {
     }).compile();
 
     exportService = module.get<ExportService>(ExportService);
-    usersService = module.get<UsersService>(UsersService);
-    booksService = module.get<BooksService>(BooksService);
   });
 
   it('should be defined', () => {
@@ -39,13 +35,23 @@ describe('ExportService', () => {
     it('should generate a valid CSV for users and books', async () => {
       const mockUsers = [
         {
-          id: '1', firstName: 'Bruno', lastName: 'Cruz', email: 'bruno.cruz@example.com', phone: '123456789',
-          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+          id: '1',
+          firstName: 'Bruno',
+          lastName: 'Cruz',
+          email: 'bruno.cruz@example.com',
+          phone: '123456789',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         },
       ];
       const mockBooks = [
         {
-          id: '101', titulo: 'Titulo do livro', autor: 'Author do livro', tema: 'Tema do livro', rating: 5, imageUrl: 'image.jpg',
+          id: '101',
+          titulo: 'Titulo do livro',
+          autor: 'Author do livro',
+          tema: 'Tema do livro',
+          rating: 5,
+          imageUrl: 'image.jpg',
         },
       ];
 
@@ -55,20 +61,28 @@ describe('ExportService', () => {
       const options: ExportOptions = { userIds: ['1'], bookIds: ['101'] };
       const result = await exportService.generateCsv(options);
 
-      const expectedUserCsv = parse(mockUsers.map(user => ({
-        id: user.id, name: `${user.firstName} ${user.lastName}`, lastName: user.lastName,
-        email: user.email, phone: user.phone, createdAt: user.createdAt, updatedAt: user.updatedAt,
-      })), {
-        fields: [
-          { label: 'ID', value: 'id' },
-          { label: 'Nome', value: 'name' },
-          { label: 'Sobrenome', value: 'lastName' },
-          { label: 'Email', value: 'email' },
-          { label: 'Telefone', value: 'phone' },
-          { label: 'Criado em', value: 'createdAt' },
-          { label: 'Atualizado em', value: 'updatedAt' },
-        ],
-      });
+      const expectedUserCsv = parse(
+        mockUsers.map((user) => ({
+          id: user.id,
+          name: `${user.firstName} ${user.lastName}`,
+          lastName: user.lastName,
+          email: user.email,
+          phone: user.phone,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        })),
+        {
+          fields: [
+            { label: 'ID', value: 'id' },
+            { label: 'Nome', value: 'name' },
+            { label: 'Sobrenome', value: 'lastName' },
+            { label: 'Email', value: 'email' },
+            { label: 'Telefone', value: 'phone' },
+            { label: 'Criado em', value: 'createdAt' },
+            { label: 'Atualizado em', value: 'updatedAt' },
+          ],
+        },
+      );
 
       const expectedBookCsv = parse(mockBooks, {
         fields: [
@@ -87,7 +101,7 @@ describe('ExportService', () => {
     it('should throw an error if no userIds or bookIds are provided', async () => {
       const options: ExportOptions = {};
       await expect(exportService.generateCsv(options)).rejects.toThrowError(
-        'Nenhum usuário ou livro encontrado para exportação. Verifique os IDs fornecidos.'
+        'Nenhum usuário ou livro encontrado para exportação. Verifique os IDs fornecidos.',
       );
     });
 
@@ -95,7 +109,7 @@ describe('ExportService', () => {
       mockBooksService.findBooksByIds.mockResolvedValue([]);
       const options: ExportOptions = { bookIds: ['999'] };
       await expect(exportService.generateCsv(options)).rejects.toThrowError(
-        'Os seguintes IDs de livros não foram encontrados no banco de dados: 999'
+        'Os seguintes IDs de livros não foram encontrados no banco de dados: 999',
       );
     });
 
@@ -103,10 +117,8 @@ describe('ExportService', () => {
       mockBooksService.findBooksByIds.mockResolvedValue([]);
       const options: ExportOptions = { userIds: ['888'] };
       await expect(exportService.generateCsv(options)).rejects.toThrowError(
-        'Os seguintes IDs de usuários não foram encontrados no banco de dados: 888'
+        'Os seguintes IDs de usuários não foram encontrados no banco de dados: 888',
       );
     });
   });
-
-  
 });

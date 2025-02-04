@@ -20,10 +20,17 @@ export class ExportController {
         });
       }
 
-      const userIdsArray = userIds ? userIds.split(',').map(id => id.trim()) : [];
-      const bookIdsArray = bookIds ? bookIds.split(',').map(id => id.trim()) : [];
+      const userIdsArray = userIds
+        ? userIds.split(',').map((id) => id.trim())
+        : [];
+      const bookIdsArray = bookIds
+        ? bookIds.split(',').map((id) => id.trim())
+        : [];
 
-      const options: ExportOptions = { userIds: userIdsArray, bookIds: bookIdsArray };
+      const options: ExportOptions = {
+        userIds: userIdsArray,
+        bookIds: bookIdsArray,
+      };
 
       const csv = await this.exportService.generateCsv(options);
 

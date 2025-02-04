@@ -261,7 +261,7 @@ describe('AuthService', () => {
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
       expect(jwtService.signAsync).toHaveBeenCalledWith(
         { sub: user.id },
-        { expiresIn: '30m' }
+        { expiresIn: '30m' },
       );
       expect(sendMailMock).toHaveBeenCalled();
     });
