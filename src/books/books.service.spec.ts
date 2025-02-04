@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BooksService } from './books.service';
 import { NotFoundException } from '@nestjs/common';
+import { isString } from 'class-validator';
 
 describe('BooksService', () => {
   let booksService: BooksService;
@@ -29,6 +30,7 @@ describe('BooksService', () => {
     const updatedBook = await booksService.updateBookStatus('1', {
       status: 'NotAvailable',
       userId: '',
+      date: '',
     });
     expect(updatedBook.status).toBe('NotAvailable');
   });
@@ -38,6 +40,8 @@ describe('BooksService', () => {
       booksService.updateBookStatus('999', {
         status: 'NotAvailable',
         userId: '',
+        date: '',
+
       }),
     ).rejects.toThrow(NotFoundException);
   });

@@ -7,7 +7,8 @@ export const booksMock = [
     description: 'Descrição do livro',
     coverImage: '/curupira.jpeg',
     status: 'Available',
-    userId: null,
+    userId: '',
+    date: '',
   },
   {
     id: 2,
@@ -17,6 +18,7 @@ export const booksMock = [
     description: 'Descrição do livro',
     coverImage: '/boto.jpeg',
     status: 'Available',
-    userId: null,
+    userId: '',
+    date: '',
   },
 ];
