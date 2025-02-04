@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersModule } from './users/users.module';
+// import { UsersModule } from './users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthModule } from './auth/auth.module';
-import { BooksModule } from './books/books.module';
+// import { AuthModule } from './auth/auth.module';
+import { KohaModule } from './koha/koha.module';
 import typeormConfig from './database/config';
 
 @Module({
@@ -17,9 +17,9 @@ import typeormConfig from './database/config';
       useFactory: async (configService: ConfigService) =>
         configService.get('typeorm'),
     }),
-    UsersModule,
-    AuthModule,
-    BooksModule
+    // UsersModule,
+    // AuthModule,
+    KohaModule,
   ],
   controllers: [],
   providers: [],
