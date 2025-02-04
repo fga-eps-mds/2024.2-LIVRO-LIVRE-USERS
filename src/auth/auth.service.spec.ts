@@ -244,5 +244,47 @@ describe('AuthService', () => {
       );
       expect(sendMailMock).toHaveBeenCalled();
     });
+
+    it('should send a recovery email when user is found', async () => {
+      const email = 'test@example.com';
+      const user = new User();
+      user.id = '123';
+      user.email = email;
+
+      jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
+      jest.spyOn(jwtService, 'signAsync').mockResolvedValueOnce('mocked-token');
+      sendMailMock.mockResolvedValueOnce(true);
+
+      const result = await service.recoverPassword(email);
+
+      expect(result).toEqual({ success: true });
+      expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
+      expect(jwtService.signAsync).toHaveBeenCalledWith(
+        { sub: user.id },
+        { expiresIn: '30m' },
+      );
+      expect(sendMailMock).toHaveBeenCalled();
+    });
+  });
+
+  describe('changePassword', () => {
+    it('should successfully change the password if user exists', async () => {
+      const userId = '123';
+      const newPassword = 'newSecurePassword';
+      const user = new User();
+      user.id = userId;
+      user.password = 'oldPassword';
+
+      jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
+      jest.spyOn(bcrypt, 'hash').mockResolvedValueOnce('hashed-new-password');
+      jest.spyOn(userRepository, 'save').mockResolvedValueOnce(user);
+
+      const result = await service.changePassword(userId, newPassword);
+
+      expect(result).toEqual({ success: true });
+      expect(userRepository.findOneBy).toHaveBeenCalledWith({ id: userId });
+      expect(bcrypt.hash).toHaveBeenCalledWith(newPassword, expect.any(Number));
+      expect(userRepository.save).toHaveBeenCalledWith(user);
+    });
   });
 });
