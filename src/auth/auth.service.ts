@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -28,33 +29,31 @@ export class AuthService {
     private usersRepository: Repository<User>,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   private validatePassword(password: string): void {
     const minLength = 8;
     const hasUpperCase = /[A-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
+  
+    const errors = [];
+  
     if (password.length < minLength) {
-      throw new BadRequestException(
-        'A senha deve ter pelo menos 8 caracteres.',
-      );
+      errors.push(`A senha deve ter pelo menos ${minLength} caracteres.`);
     }
     if (!hasUpperCase) {
-      throw new BadRequestException(
-        'A senha deve conter pelo menos uma letra maiúscula.',
-      );
+      errors.push('A senha deve conter pelo menos uma letra maiúscula.');
     }
     if (!hasNumber) {
-      throw new BadRequestException(
-        'A senha deve conter pelo menos um número.',
-      );
+      errors.push('A senha deve conter pelo menos um número.');
     }
     if (!hasSpecialChar) {
-      throw new BadRequestException(
-        'A senha deve conter pelo menos um caractere especial.',
-      );
+      errors.push('A senha deve conter pelo menos um caractere especial (!@#$%^&*(),.?":{}|<>).');
+    }
+  
+    if (errors.length > 0) {
+      throw new BadRequestException(errors.join(' ')); 
     }
   }
 
@@ -76,18 +75,18 @@ export class AuthService {
       accessToken: await this.jwtService.signAsync(payload, {
         expiresIn: accessTokenExpiresIn,
       }),
-      refreshToken: await this.jwtService.signAsync(payload), // Considere adicionar uma expiração ao refreshToken também
+      refreshToken: await this.jwtService.signAsync(payload), 
     };
   }
 
   async signUp(dto: SignUpDto): Promise<SignInResponseDto> {
-    // Validação da senha ANTES da criação do usuário
+    
     this.validatePassword(dto.password);
 
     const userExists = await this.usersRepository.findOneBy({
       email: dto.email,
     });
-    if (userExists) throw new UnauthorizedException('Usuário já cadastrado.');
+    if (userExists) throw new BadRequestException('Usuário já cadastrado.');
 
     const user = this.usersRepository.create({
       ...dto,
@@ -140,30 +139,34 @@ export class AuthService {
 
   async changePassword(
     userId: string,
-    changePasswordDto: ChangePasswordDto, 
-  ): Promise<{ success: boolean }> {
-    const user = await this.usersRepository.findOneBy({ id: userId });
-    if (!user) throw new UnauthorizedException('Usuário não encontrado.');
-
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<void> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+  
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+  
     
+    this.validatePassword(changePasswordDto.newPassword);
+  
     const passwordMatches = await bcrypt.compare(
       changePasswordDto.currentPassword,
       user.password,
     );
+  
     if (!passwordMatches) {
       throw new UnauthorizedException('Senha atual incorreta.');
+    return; 
     }
-
-    
-    this.validatePassword(changePasswordDto.newPassword);
-
-    
-    user.password = await bcrypt.hash(
-      changePasswordDto.newPassword,
-      await bcrypt.genSalt(10),
-    );
-    await this.usersRepository.save(user);
-    return { success: true };
-  }
   
+    
+    const hashedPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      10,
+    );
+  
+    user.password = hashedPassword;
+    await this.usersRepository.save(user);
+  }
 }

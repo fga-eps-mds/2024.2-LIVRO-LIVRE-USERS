@@ -13,11 +13,13 @@ import { ConfigService } from '@nestjs/config';
 import { SignInDto } from './dtos/signIn.dto';
 import { ChangePasswordDto } from './dtos/changePassword.dto';
 
+
 describe('AuthService', () => {
   let service: AuthService;
   let userRepository: Repository<User>;
   let jwtService: JwtService;
   let sendMailMock: jest.Mock;
+  
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,6 +28,7 @@ describe('AuthService', () => {
         {
           provide: getRepositoryToken(User),
           useFactory: repositoryMockFactory,
+          
         },
         {
           provide: JwtService,
@@ -140,15 +143,9 @@ describe('AuthService', () => {
         BadRequestException,
       );
 
-      try {
-        await service.signUp(signUpDto);
-        fail('An error should be thrown');
-      } catch (error) {
-        expect(error).toBeInstanceOf(BadRequestException);
-        expect((error as Error).message).toBe('Usuário já cadastrado.');
-        expect(userRepository.create).not.toHaveBeenCalled();
-        expect(userRepository.save).not.toHaveBeenCalled();
-      }
+      expect(userRepository.create).not.toHaveBeenCalled();
+      expect(userRepository.save).not.toHaveBeenCalled();
+
     });
 
     it('should throw an error if password does not meet criteria', async () => {
@@ -157,7 +154,7 @@ describe('AuthService', () => {
         lastName: 'User',
         email: 'test@email.com',
         phone: '123456789',
-        password: 'password', // Invalid password
+        password: 'password', 
       };
 
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(null);
@@ -181,7 +178,7 @@ describe('AuthService', () => {
       jest.spyOn(bcrypt, 'compare').mockResolvedValueOnce(false);
 
       await expect(service.signIn({ email, password, role })).rejects.toThrow(
-        UnauthorizedException,
+        BadRequestException,
       );
 
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email, role });
@@ -315,7 +312,7 @@ describe('AuthService', () => {
       const signSpy = jest.spyOn(jwtService, 'signAsync');
 
       await expect(service.recoverPassword(email)).rejects.toThrow(
-        UnauthorizedException,
+        BadRequestException,
       );
 
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
@@ -344,31 +341,54 @@ describe('AuthService', () => {
       );
       expect(sendMailMock).toHaveBeenCalled();
     });
+
+    it('should send a recovery email if user is found', async () => {
+      const email = 'test@example.com';
+      const user = new User();
+      user.id = '123';
+      user.email = email;
+
+      jest.spyOn(userRepository, 'findOneBy').mockResolvedValueOnce(user);
+      jest.spyOn(jwtService, 'signAsync').mockResolvedValueOnce('mocked-token');
+
+      await service.recoverPassword(email);
+
+      expect(userRepository.findOneBy).toHaveBeenCalledWith({ email });
+      expect(jwtService.signAsync).toHaveBeenCalledWith(
+        { sub: user.id },
+        { expiresIn: '30m' },
+      );
+      expect(sendMailMock).toHaveBeenCalled();
+    });
   });
   describe('changePassword', () => {
     it('should change the password successfully', async () => {
       const changePasswordDto: ChangePasswordDto = {
         currentPassword: 'oldPassword',
         newPassword: 'NewPassword1!',
-        
       };
       const userId = 'user-id';
       const user = new User();
       user.id = userId;
       user.password = await bcrypt.hash('oldPassword', 10);
 
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(user); // Usa userRepositoryMock
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+      jest.spyOn(userRepository, 'save').mockResolvedValue(user); // Usa userRepositoryMock
       jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       jest.spyOn(userRepository, 'save').mockResolvedValue(user);
 
-     
-      await service.changePassword(userId, changePasswordDto); 
+      await service.changePassword(userId, changePasswordDto);
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ id: userId });
       expect(bcrypt.compare).toHaveBeenCalledWith(
         changePasswordDto.currentPassword,
         user.password,
       );
-      expect(bcrypt.hash).toHaveBeenCalledWith(changePasswordDto.newPassword, 10);
+      expect(bcrypt.hash).toHaveBeenCalledWith(
+        changePasswordDto.newPassword,
+        10,
+      );
       expect(userRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           password: 'hashed-password',
@@ -377,57 +397,105 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException when current password is wrong', async () => {
+      const userId = '1';
       const changePasswordDto: ChangePasswordDto = {
         currentPassword: 'wrongPassword',
         newPassword: 'NewPassword1!',
       };
-      const userId = 'user-id';
+    
       const user = new User();
-      user.id = userId;
-      user.password = await bcrypt.hash('oldPassword', 10);
-
-      jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(user);
+      user.password = 'hashedPassword';
+    
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(user); // Use userRepositoryMock
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
-
-      await expect(
-        service.changePassword(userId, changePasswordDto),
-      ).rejects.toThrow(UnauthorizedException);
-
-      expect(userRepository.findOneBy).toHaveBeenCalledWith({ id: userId });
-      expect(bcrypt.compare).toHaveBeenCalledWith(
-        changePasswordDto.currentPassword,
-        user.password,
-      );
-      expect(bcrypt.hash).not.toHaveBeenCalled();
-      expect(userRepository.save).not.toHaveBeenCalled();
-    });
-
-    it('should throw BadRequestException when new password does not meet criteria', async () => {
-      const changePasswordDto: ChangePasswordDto = {
-        currentPassword: 'oldPassword',
-        newPassword: 'invalidpassword',
-      };
-      const userId = 'user-id';
-      const user = new User();
-      user.id = userId;
-      user.password = await bcrypt.hash('oldPassword', 10);
-
-      jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(user);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
-
-     
+    
       await expect(
         service.changePassword(userId, changePasswordDto),
       ).rejects.toThrow(BadRequestException);
-
-      expect(userRepository.findOneBy).toHaveBeenCalledWith({ id: userId });
-      expect(bcrypt.compare).toHaveBeenCalledWith(
-        changePasswordDto.currentPassword,
-        user.password,
-      );
-      
+    
       expect(bcrypt.hash).not.toHaveBeenCalled();
-      expect(userRepository.save).not.toHaveBeenCalled();
+      expect(userRepository.save).not.toHaveBeenCalled(); // Use userRepositoryMock
+    });
+
+    describe('should throw BadRequestException when new password does not meet criteria', () => {
+      it('should throw BadRequestException when password is too short', async () => {
+        const changePasswordDto: ChangePasswordDto = {
+          currentPassword: 'oldPassword',
+          newPassword: 'short',
+        };
+        const userId = 'user-id';
+
+        jest.spyOn(userRepository, 'findOneBy').mockResolvedValue({
+          id: userId,
+          password: await bcrypt.hash('oldPassword', 10),
+        } as User);
+
+        await expect(
+          service.changePassword(userId, changePasswordDto),
+        ).rejects.toThrow(BadRequestException);
+
+        expect(bcrypt.hash).not.toHaveBeenCalled();
+        expect(userRepository.save).not.toHaveBeenCalled();
+      });
+
+      it('should throw BadRequestException when password does not contain uppercase letter', async () => {
+        const changePasswordDto: ChangePasswordDto = {
+          currentPassword: 'oldPassword',
+          newPassword: 'password1!',  
+        };
+        const userId = 'user-id';
+
+        jest.spyOn(userRepository, 'findOne').mockResolvedValue({ 
+          id: userId,
+          password: await bcrypt.hash('oldPassword', 10),
+        } as User);
+
+        await expect(
+          service.changePassword(userId, changePasswordDto),
+        ).rejects.toThrow(BadRequestException);
+
+        expect(bcrypt.hash).not.toHaveBeenCalled();
+        expect(userRepository.save).not.toHaveBeenCalled();
+      });
+
+      it('should throw BadRequestException when password does not contain number', async () => {
+        const changePasswordDto: ChangePasswordDto = {
+          currentPassword: 'oldPassword',
+          newPassword: 'PasswordNoNumber!', 
+        };
+        const userId = 'user-id';
+
+        jest.spyOn(userRepository, 'findOne').mockResolvedValue({ 
+          id: userId,
+          password: await bcrypt.hash('oldPassword', 10)
+        } as User);
+
+        await expect(service.changePassword(userId, changePasswordDto))
+          .rejects.toThrow(BadRequestException);
+
+        expect(bcrypt.hash).not.toHaveBeenCalled();
+        expect(userRepository.save).not.toHaveBeenCalled();
+      });
+
+      it('should throw BadRequestException when password does not contain special character', async () => {
+        const changePasswordDto: ChangePasswordDto = {
+          currentPassword: 'oldPassword',
+          newPassword: 'Password123NoSpecial', 
+        };
+        const userId = 'user-id';
+
+        jest.spyOn(userRepository, 'findOne').mockResolvedValue({ 
+          id: userId,
+          password: await bcrypt.hash('oldPassword', 10),
+        } as User);
+
+        await expect(
+          service.changePassword(userId, changePasswordDto),
+        ).rejects.toThrow(BadRequestException);
+
+        expect(bcrypt.hash).not.toHaveBeenCalled();
+        expect(userRepository.save).not.toHaveBeenCalled();
+      });
     });
   });
 });

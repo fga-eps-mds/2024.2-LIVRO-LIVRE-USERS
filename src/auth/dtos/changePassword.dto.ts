@@ -1,6 +1,9 @@
 import { IsNotEmpty, IsString, Length, Matches } from 'class-validator';
 
 export class ChangePasswordDto {
+  static currentPassword(currentPassword: any, password: string): any {
+    throw new Error('Method not implemented.');
+  }
   @IsNotEmpty()
   @IsString()
   currentPassword: string;
