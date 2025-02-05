@@ -13,6 +13,19 @@ from dotenv import load_dotenv
 ######################################
 TODAY = datetime.now()
 load_dotenv()
+SONARCLOUD_TOKEN = os.getenv('SONARCLOUD_TOKEN')  # Seu token de acesso do SonarCloud
+QUALITY_GATE_ID = os.getenv('QUALITY_GATE_ID')      # ID da Quality Gate que você deseja atualizar
+
+url = 'https://sonarcloud.io/api/qualitygates/update_condition'
+params = {
+    'gateId': QUALITY_GATE_ID,
+    'metric': 'coverage',
+    'op': 'LT',   # "Less Than" – a condição será acionada se a cobertura for menor que o valor definido
+    'error': 30,  # Novo threshold de cobertura (30%)
+}
+
+response = requests.post(url, params=params, auth=HTTPBasicAuth(SONARCLOUD_TOKEN, ''))
+print(response.json())
 # Variáveis globais ao repositório
 OWNER = "fga-eps-mds"
 REPO = os.getenv('REPO')
