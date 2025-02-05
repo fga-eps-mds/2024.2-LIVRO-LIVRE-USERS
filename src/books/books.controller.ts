@@ -22,6 +22,15 @@ export class BooksController {
     }
   }
 
+  @Get('/search/:userId')
+  async getBookByuserId(@Param('userId') userId: string): Promise<BorrowBooksDto> {
+    try {
+      return await this.booksService.getBookByuserId(userId);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   @Put(':id/status')
   async updateBookStatus(
     @Param('id') id: string,
