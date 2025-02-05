@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BooksService } from './books.service';
 import { NotFoundException } from '@nestjs/common';
-import { isString } from 'class-validator';
 
 describe('BooksService', () => {
   let booksService: BooksService;
@@ -41,7 +40,6 @@ describe('BooksService', () => {
         status: 'NotAvailable',
         userId: '',
         date: '',
-
       }),
     ).rejects.toThrow(NotFoundException);
   });

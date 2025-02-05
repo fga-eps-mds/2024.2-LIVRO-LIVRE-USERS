@@ -31,19 +31,18 @@ export class BooksService {
     updateBookStatusDto: UpdateBookStatusDto,
   ): Promise<BorrowBooksDto> {
     const bookIndex = this.books.findIndex((book) => book.id === Number(id));
-  
+
     if (bookIndex === -1) {
       throw new NotFoundException('Livro não encontrado');
     }
-  
 
     this.books[bookIndex] = {
       ...this.books[bookIndex],
       status: updateBookStatusDto.status,
       userId: updateBookStatusDto.userId,
-      date: new Date().toISOString(), 
+      date: new Date().toISOString(),
     };
-  
+
     return this.books[bookIndex];
   }
 }
