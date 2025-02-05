@@ -65,7 +65,7 @@ export class AuthService {
   }: SignInDto & { keepLoggedIn?: boolean }): Promise<SignInResponseDto> {
     const user = await this.usersRepository.findOneBy({ email, role });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('E-mail ou senha inválidos.');
+      throw new BadRequestException('E-mail ou senha inválidos.');
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
@@ -110,7 +110,7 @@ export class AuthService {
 
   async recoverPassword(email: string): Promise<{ success: boolean }> {
     const user = await this.usersRepository.findOneBy({ email });
-    if (!user) throw new UnauthorizedException('Usuário não encontrado.');
+    if (!user) throw new BadRequestException('Usuário não encontrado.');
 
     const token = await this.jwtService.signAsync(
       { sub: user.id },
@@ -156,7 +156,7 @@ export class AuthService {
     );
   
     if (!passwordMatches) {
-      throw new UnauthorizedException('Senha atual incorreta.');
+      throw new BadRequestException('Senha atual incorreta.');
     return; 
     }
   
