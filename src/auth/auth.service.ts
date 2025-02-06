@@ -53,16 +53,21 @@ export class AuthService {
     email,
     password,
     role,
-  }: SignInDto): Promise<SignInResponseDto> {
+    keepLoggedIn = false,
+  }: SignInDto & { keepLoggedIn?: boolean }): Promise<SignInResponseDto> {
     const user = await this.usersRepository.findOneBy({ email, role });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('E-mail ou senha inválidos.');
+      throw new BadRequestException('E-mail ou senha inválidos.');
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessTokenExpiresIn = keepLoggedIn ? '7d' : '30m';
+
     return {
-      accessToken: await this.jwtService.signAsync(payload),
-      refreshToken: await this.jwtService.signAsync(payload),
+      accessToken: await this.jwtService.signAsync(payload, {
+        expiresIn: accessTokenExpiresIn,
+      }),
+      refreshToken: await this.jwtService.signAsync(payload), 
     };
   }
 
