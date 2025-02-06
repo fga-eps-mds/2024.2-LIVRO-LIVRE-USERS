@@ -1,14 +1,14 @@
+import { InjectRepository } from '@nestjs/typeorm';
+import { UpdateUserDto } from './dtos/updateUser.dto';
+import { Repository } from 'typeorm';
+import { User } from '../database/entities/user.entity';
+import * as bcrypt from 'bcrypt';
+import { ListUsersQueryDto } from './dtos/listUsersQuery.dto';
 import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UpdateUserDto } from './dtos/updateUser.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../database/entities/user.entity';
-import * as bcrypt from 'bcrypt';
-import { ListUsersQueryDto } from './dtos/listUsersQuery.dto';
 
 @Injectable()
 export class UsersService {

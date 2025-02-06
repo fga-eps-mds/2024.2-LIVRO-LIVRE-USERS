@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRoles } from '../database/entities/user.entity';
@@ -17,28 +21,64 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  private validatePassword(password: string): void {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (password.length < minLength) {
+      throw new BadRequestException(
+        'A senha deve ter pelo menos 8 caracteres.',
+      );
+    }
+    if (!hasUpperCase) {
+      throw new BadRequestException(
+        'A senha deve conter pelo menos uma letra maiúscula.',
+      );
+    }
+    if (!hasNumber) {
+      throw new BadRequestException(
+        'A senha deve conter pelo menos um número.',
+      );
+    }
+    if (!hasSpecialChar) {
+      throw new BadRequestException(
+        'A senha deve conter pelo menos um caractere especial.',
+      );
+    }
+  }
+
   async signIn({
     email,
     password,
     role,
-  }: SignInDto): Promise<SignInResponseDto> {
+    keepLoggedIn = false,
+  }: SignInDto & { keepLoggedIn?: boolean }): Promise<SignInResponseDto> {
     const user = await this.usersRepository.findOneBy({ email, role });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('E-mail ou senha inválidos.');
+      throw new BadRequestException('E-mail ou senha inválidos.');
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessTokenExpiresIn = keepLoggedIn ? '7d' : '30m';
+
     return {
-      accessToken: await this.jwtService.signAsync(payload),
-      refreshToken: await this.jwtService.signAsync(payload),
+      accessToken: await this.jwtService.signAsync(payload, {
+        expiresIn: accessTokenExpiresIn,
+      }),
+      refreshToken: await this.jwtService.signAsync(payload), 
     };
   }
 
   async signUp(dto: SignUpDto): Promise<SignInResponseDto> {
+    this.validatePassword(dto.password); // Validate password before proceeding
+
     const userExists = await this.usersRepository.findOneBy({
       email: dto.email,
     });
     if (userExists) throw new UnauthorizedException('Usuário já cadastrado.');
+
     const user = this.usersRepository.create({
       ...dto,
       role: UserRoles.User,
@@ -50,6 +90,13 @@ export class AuthService {
       password: dto.password,
       role: user.role,
     });
+  }
+  async generateAccessToken(payload: any, expiresIn: string): Promise<string> {
+    return this.jwtService.signAsync(payload, { expiresIn });
+  }
+
+  async generateRefreshToken(payload: any): Promise<string> {
+    return this.jwtService.signAsync(payload);
   }
 
   async getProfile(data: { sub: string; email: string }): Promise<User> {
