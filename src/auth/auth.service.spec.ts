@@ -348,5 +348,54 @@ describe('AuthService', () => {
       );
     });
   });
+
+  describe('validatePassword', () => {
+    it('should throw BadRequestException if password is less than 8 characters', async () => {
+      const shortPassword = 'Pass1!'; // 6 characters, missing length
+      await expect(() =>
+        (service as any).validatePassword(shortPassword),
+      ).toThrowError(BadRequestException);
+      await expect(() =>
+        (service as any).validatePassword(shortPassword),
+      ).toThrowError('A senha deve ter pelo menos 8 caracteres.');
+    });
+  
+    it('should throw BadRequestException if password has no uppercase letter', async () => {
+      const noUppercasePassword = 'password1!'; // Missing uppercase
+      await expect(() =>
+        (service as any).validatePassword(noUppercasePassword),
+      ).toThrowError(BadRequestException);
+      await expect(() =>
+        (service as any).validatePassword(noUppercasePassword),
+      ).toThrowError('A senha deve conter pelo menos uma letra maiúscula.');
+    });
+  
+    it('should throw BadRequestException if password has no number', async () => {
+      const noNumberPassword = 'Password!'; // Missing number
+      await expect(() =>
+        (service as any).validatePassword(noNumberPassword),
+      ).toThrowError(BadRequestException);
+      await expect(() =>
+        (service as any).validatePassword(noNumberPassword),
+      ).toThrowError('A senha deve conter pelo menos um número.');
+    });
+  
+    it('should throw BadRequestException if password has no special character', async () => {
+      const noSpecialCharPassword = 'Password1'; // Missing special character
+      await expect(() =>
+        (service as any).validatePassword(noSpecialCharPassword),
+      ).toThrowError(BadRequestException);
+      await expect(() =>
+        (service as any).validatePassword(noSpecialCharPassword),
+      ).toThrowError('A senha deve conter pelo menos um caractere especial.');
+    });
+  
+    it('should not throw an exception if password meets all criteria', async () => {
+      const validPassword = 'ValidPassword123!'; // Meets all criteria
+      expect(() =>
+        (service as any).validatePassword(validPassword),
+      ).not.toThrow();
+    });
+  });
   
 });
