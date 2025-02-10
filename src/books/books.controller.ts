@@ -8,6 +8,11 @@ import { UpdateBookStatusDto } from './dtos/updateBookStatus.dto'; // Certifique
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
+  @Get() 
+  async getAllBooks() {
+    return this.booksService.findAll();
+  }
+
   @Get('search')
   async searchBooks(@Query() searchParams: SearchBooksDto) {
     return this.booksService.searchBooks(searchParams);
