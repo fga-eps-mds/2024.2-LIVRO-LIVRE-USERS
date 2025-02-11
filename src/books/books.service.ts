@@ -8,6 +8,10 @@ import { booksMock } from './books.mock';
 export class BooksService {
   private books = booksMock;
 
+  async findAll() {
+    return this.books;
+  }
+
   async searchBooks(searchParams: SearchBooksDto) {
     return this.books.filter(
       (book) =>
