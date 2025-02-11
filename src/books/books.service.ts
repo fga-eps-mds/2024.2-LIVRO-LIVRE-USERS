@@ -26,6 +26,14 @@ export class BooksService {
     return book;
   }
 
+  async getBookByuserId(userId: string): Promise<BorrowBooksDto> {
+    const book = this.books.find((book) => book.userId === userId);
+    if (!book) {
+      throw new NotFoundException('Livro não encontrado');
+    }
+    return book;
+  }
+
   async updateBookStatus(
     id: string,
     updateBookStatusDto: UpdateBookStatusDto,
