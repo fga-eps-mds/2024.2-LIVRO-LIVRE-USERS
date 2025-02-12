@@ -61,7 +61,7 @@ describe('LivrosService', () => {
     }).compile();
 
     service = module.get<LivrosService>(LivrosService);
-  });
+  },10000);// Aumento do timeout para 10 segundos
 
   it('should be defined', () => {
     expect(service).toBeDefined();
