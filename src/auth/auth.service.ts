@@ -1,6 +1,5 @@
 import {
   Injectable,
-  UnauthorizedException,
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
@@ -36,9 +35,9 @@ export class AuthService {
     const hasUpperCase = /[A-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-  
+
     const errors = [];
-  
+
     if (password.length < minLength) {
       errors.push(`A senha deve ter pelo menos ${minLength} caracteres.`);
     }
@@ -51,9 +50,9 @@ export class AuthService {
     if (!hasSpecialChar) {
       errors.push('A senha deve conter pelo menos um caractere especial (!@#$%^&*(),.?":{}|<>).');
     }
-  
+
     if (errors.length > 0) {
-      throw new BadRequestException(errors.join(' ')); 
+      throw new BadRequestException(errors.join(' '));
     }
   }
 
@@ -75,12 +74,12 @@ export class AuthService {
       accessToken: await this.jwtService.signAsync(payload, {
         expiresIn: accessTokenExpiresIn,
       }),
-      refreshToken: await this.jwtService.signAsync(payload), 
+      refreshToken: await this.jwtService.signAsync(payload),
     };
   }
 
   async signUp(dto: SignUpDto): Promise<SignInResponseDto> {
-    
+
     this.validatePassword(dto.password);
 
     const userExists = await this.usersRepository.findOneBy({
@@ -141,30 +140,30 @@ export class AuthService {
     userId: string,
     changePasswordDto: ChangePasswordDto,
   ): Promise<void> {
-    const user = await this.usersRepository.findOneBy(  { id: userId } );
-  
+    const user = await this.usersRepository.findOneBy({ id: userId });
+
     if (!user) {
       throw new NotFoundException('Usuário não encontrado.');
     }
-  
-  
+
+
     const passwordMatches = await bcrypt.compare(
       changePasswordDto.currentPassword,
       user.password,
     );
-  
+
     if (!passwordMatches) {
       throw new BadRequestException('Senha atual incorreta.');
-     
+
     }
-  
+
     this.validatePassword(changePasswordDto.newPassword);
-    
+
     const hashedPassword = await bcrypt.hash(
       changePasswordDto.newPassword,
       10,
     );
-  
+
     user.password = hashedPassword;
     await this.usersRepository.save(user);
   }

@@ -7,7 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SignUpDto } from '../auth/dtos/signUp.dto';
 import * as bcrypt from 'bcryptjs';
 import { repositoryMockFactory } from '../../test/database/utils';
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException} from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 import { SignInDto } from './dtos/signIn.dto';
