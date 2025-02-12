@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from './auth.service';
+import { AuthService, InvalidPasswordException } from './auth.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User, UserRoles } from '../database/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
@@ -414,5 +414,38 @@ describe('AuthService', () => {
         expect(bcrypt.hash).not.toHaveBeenCalled();
         expect(userRepository.save).not.toHaveBeenCalled();
     });
-});
+  });
+
+  describe('InvalidPasswordException', () => {
+    it('should throw InvalidPasswordException with the correct message', () => {
+      const message = 'Invalid password';
+      const exception = new InvalidPasswordException(message);
+      expect(exception.message).toBe(message);
+    });
+  });
+
+  describe('validatePassword', () => {
+    it('should throw BadRequestException if password does not meet criteria', async () => {
+      const invalidPasswords = [
+        { password: 'short', expectedError: 'A senha deve ter pelo menos 8 caracteres.' },
+        { password: 'nouppercase', expectedError: 'A senha deve conter pelo menos uma letra maiúscula.' },
+        { password: 'NoNumber', expectedError: 'A senha deve conter pelo menos um número.' },
+        { password: 'NoSpecial1', expectedError: 'A senha deve conter pelo menos um caractere especial (!@#$%^&*(),.?":{}|<>).' },
+      ];
+
+      const validSignUpDto: SignUpDto = {
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'test@example.com',
+        phone: '123456789',
+        password: 'ValidPassword1!',
+      };
+
+      for (const { password, expectedError } of invalidPasswords) {
+        await expect(service.signUp({ ...validSignUpDto, password })).rejects.toThrow(BadRequestException);
+        await expect(service.signUp({ ...validSignUpDto, password })).rejects.toThrow(expectedError);
+      }
+    });
+  });
+
 });
