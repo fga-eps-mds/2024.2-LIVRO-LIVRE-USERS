@@ -18,7 +18,7 @@ import { ChangePasswordDto } from './dtos/changePassword.dto';
 
 export class InvalidPasswordException extends BadRequestException {
   constructor(message: string) {
-    super(message);
+    super(message); //sem cobertura 
   }
 }
 
@@ -141,14 +141,12 @@ export class AuthService {
     userId: string,
     changePasswordDto: ChangePasswordDto,
   ): Promise<void> {
-    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    const user = await this.usersRepository.findOneBy(  { id: userId } );
   
     if (!user) {
       throw new NotFoundException('Usuário não encontrado.');
     }
   
-    
-    this.validatePassword(changePasswordDto.newPassword);
   
     const passwordMatches = await bcrypt.compare(
       changePasswordDto.currentPassword,
@@ -157,9 +155,10 @@ export class AuthService {
   
     if (!passwordMatches) {
       throw new BadRequestException('Senha atual incorreta.');
-    return; 
+     
     }
   
+    this.validatePassword(changePasswordDto.newPassword);
     
     const hashedPassword = await bcrypt.hash(
       changePasswordDto.newPassword,
