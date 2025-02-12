@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRoles } from '../database/entities/user.entity';
@@ -8,6 +12,14 @@ import { SignInDto } from './dtos/signIn.dto';
 import { SignInResponseDto } from './dtos/signInResponse.dto';
 import { SignUpDto } from './dtos/signUp.dto';
 import * as nodemailer from 'nodemailer';
+import { ConfigService } from '@nestjs/config';
+import { ChangePasswordDto } from './dtos/changePassword.dto';
+
+export class InvalidPasswordException extends BadRequestException {
+  constructor(message: string) {
+    super(message); //sem cobertura 
+  }
+}
 
 @Injectable()
 export class AuthService {
@@ -15,40 +27,78 @@ export class AuthService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private jwtService: JwtService,
-  ) {}
+    private configService: ConfigService,
+  ) { }
+
+  private validatePassword(password: string): void {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    const errors = [];
+
+    if (password.length < minLength) {
+      errors.push(`A senha deve ter pelo menos ${minLength} caracteres.`);
+    }
+    if (!hasUpperCase) {
+      errors.push('A senha deve conter pelo menos uma letra maiúscula.');
+    }
+    if (!hasNumber) {
+      errors.push('A senha deve conter pelo menos um número.');
+    }
+    if (!hasSpecialChar) {
+      errors.push('A senha deve conter pelo menos um caractere especial (!@#$%^&*(),.?":{}|<>).');
+    }
+
+    if (errors.length > 0) {
+      throw new BadRequestException(errors.join(' '));
+    }
+  }
 
   async signIn({
     email,
     password,
     role,
-  }: SignInDto): Promise<SignInResponseDto> {
+    keepLoggedIn = false,
+  }: SignInDto & { keepLoggedIn?: boolean }): Promise<SignInResponseDto> {
     const user = await this.usersRepository.findOneBy({ email, role });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('E-mail ou senha inválidos.');
+      throw new BadRequestException('E-mail ou senha inválidos.');
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessTokenExpiresIn = keepLoggedIn ? '7d' : '30m';
+
     return {
-      accessToken: await this.jwtService.signAsync(payload),
+      accessToken: await this.jwtService.signAsync(payload, {
+        expiresIn: accessTokenExpiresIn,
+      }),
       refreshToken: await this.jwtService.signAsync(payload),
     };
   }
 
   async signUp(dto: SignUpDto): Promise<SignInResponseDto> {
+
+    this.validatePassword(dto.password);
+
     const userExists = await this.usersRepository.findOneBy({
       email: dto.email,
     });
-    if (userExists) throw new UnauthorizedException('Usuário já cadastrado.');
+    if (userExists) throw new BadRequestException('Usuário já cadastrado.');
+
     const user = this.usersRepository.create({
       ...dto,
       role: UserRoles.User,
       password: await bcrypt.hash(dto.password, await bcrypt.genSalt(10)),
     });
     await this.usersRepository.save(user);
+
     return this.signIn({
       email: dto.email,
       password: dto.password,
       role: user.role,
+      keepLoggedIn: false,
     });
   }
 
@@ -59,7 +109,7 @@ export class AuthService {
 
   async recoverPassword(email: string): Promise<{ success: boolean }> {
     const user = await this.usersRepository.findOneBy({ email });
-    if (!user) throw new UnauthorizedException('Usuário não encontrado.');
+    if (!user) throw new BadRequestException('Usuário não encontrado.');
 
     const token = await this.jwtService.signAsync(
       { sub: user.id },
@@ -87,13 +137,34 @@ export class AuthService {
   }
 
   async changePassword(
-    id: string,
-    password: string,
-  ): Promise<{ success: boolean }> {
-    const user = await this.usersRepository.findOneBy({ id });
-    if (!user) throw new UnauthorizedException('Usuário não encontrado.');
-    user.password = await bcrypt.hash(password, await bcrypt.genSalt(10));
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<void> {
+    const user = await this.usersRepository.findOneBy({ id: userId });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+
+    const passwordMatches = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password,
+    );
+
+    if (!passwordMatches) {
+      throw new BadRequestException('Senha atual incorreta.');
+
+    }
+
+    this.validatePassword(changePasswordDto.newPassword);
+
+    const hashedPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      10,
+    );
+
+    user.password = hashedPassword;
     await this.usersRepository.save(user);
-    return { success: true };
   }
 }
